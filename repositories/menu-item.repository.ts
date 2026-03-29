@@ -395,8 +395,13 @@ export class RestaurantMenuRepository {
     const restaurantMenu = await prisma.restaurantMenu.findMany({
       where: { menuItemId },
       include: {
-        menuItem: true,
+        menuItem: {
+          include: {
+            image: true,
+          },
+        },
         restaurant: true,
+        image: true,
       },
       orderBy: {
         restaurant: {

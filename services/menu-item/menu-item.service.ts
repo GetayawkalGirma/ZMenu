@@ -517,9 +517,24 @@ export class RestaurantMenuService {
     menuItemId: string,
   ): Promise<RestaurantMenu[]> {
     try {
-      return await RestaurantMenuRepository.getRestaurantsByMenuItem(
+      const items = await RestaurantMenuRepository.getRestaurantsByMenuItem(
         menuItemId,
       );
+
+      items.forEach((rm) => {
+        if ((rm as any).image) {
+          (rm as any).imageUrl = fileService.getPublicUrl(
+            (rm as any).image.path,
+          );
+        }
+        if ((rm as any).menuItem?.image) {
+          (rm as any).menuItem.imageUrl = fileService.getPublicUrl(
+            (rm as any).menuItem.image.path,
+          );
+        }
+      });
+
+      return items;
     } catch (error) {
       console.error("Failed to get restaurants by menu item:", error);
       throw new Error("Failed to fetch restaurants for menu item");

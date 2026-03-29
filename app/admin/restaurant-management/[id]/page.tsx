@@ -86,6 +86,29 @@ export default async function RestaurantViewPage({
                       {restaurant.location || "Not set"}
                     </p>
                   </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">
+                      Geo Location
+                    </h3>
+                    {restaurant.geoLocation ? (
+                      restaurant.geoLocation.includes('<iframe') ? (
+                        <p className="text-lg text-green-600 font-medium italic">Google Maps Embed Attached</p>
+                      ) : restaurant.geoLocation.startsWith('http') ? (
+                        <a 
+                          href={restaurant.geoLocation} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-lg"
+                        >
+                          View on Google Maps
+                        </a>
+                      ) : (
+                        <p className="text-lg">{restaurant.geoLocation}</p>
+                      )
+                    ) : (
+                      <p className="text-lg text-gray-400 italic">Not set</p>
+                    )}
+                  </div>
                   {restaurant.logoUrl && (
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">
@@ -131,6 +154,26 @@ export default async function RestaurantViewPage({
 
               {/* Restaurant Features */}
               <RestaurantFeaturesView restaurantId={restaurant.id} />
+
+              {/* Map View */}
+              {restaurant.geoLocation?.includes("<iframe") && (
+                <Card className="overflow-hidden shadow-md border-blue-100">
+                  <CardHeader className="bg-blue-50/50">
+                    <CardTitle className="text-blue-900 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                      Location Map
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: restaurant.geoLocation.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="450"') 
+                      }} 
+                      className="w-full h-[450px] [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-none"
+                    />
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Sidebar */}

@@ -21,6 +21,7 @@ export interface RestaurantFeatures {
 export interface RestaurantFormData {
   name: string;
   location: string;
+  geoLocation?: string;
   logo?: File;
   features: {
     isLuxury: boolean;

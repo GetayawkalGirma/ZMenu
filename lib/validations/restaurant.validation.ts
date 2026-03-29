@@ -11,6 +11,7 @@ export const createRestaurantSchema = z.object({
     .min(1, "Location is required")
     .max(200, "Location must be less than 200 characters")
     .trim(),
+  geoLocation: z.string().optional(),
   logoUrl: z.string().url().optional().or(z.literal('')),
   logo: z.any().optional(), // File object
   menuImageUrl: z.string().url().optional().or(z.literal('')),

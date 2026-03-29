@@ -59,6 +59,7 @@ export default function EditRestaurantPage({
         const formData: CreateRestaurantInput = {
           name: r.name || "",
           location: r.location || "",
+          geoLocation: r.geoLocation || undefined,
           logoUrl: r.logoUrl || undefined,
           logoId: r.logoId || undefined,
           menuImageUrl: r.menuImageUrl || undefined,
@@ -244,6 +245,7 @@ export default function EditRestaurantPage({
                     initialData={{
                       name: restaurant.name,
                       location: restaurant.location,
+                      geoLocation: (restaurant as any).geoLocation,
                       logoUrl: (restaurant as any).logoUrl,
                       logoId: (restaurant as any).logoId,
                       menuImageUrl: (restaurant as any).menuImageUrl,

@@ -8,6 +8,7 @@ export interface Restaurant {
   id: string;
   name: string | null;
   location: string | null;
+  geoLocation: string | null;
   logoUrl: string | null;
   logoId: string | null;
   menuImageUrl: string | null;
@@ -27,6 +28,7 @@ export class RestaurantRepository {
       data: {
         name: data.name,
         location: data.location,
+        geoLocation: data.geoLocation || null,
         logoUrl: data.logoUrl || null,
         logoId: (data as any).logoId || null,
         menuImageUrl: (data as any).menuImageUrl || null,
@@ -59,6 +61,7 @@ export class RestaurantRepository {
       data: {
         name: data.name,
         location: data.location,
+        geoLocation: data.geoLocation || null,
         logoUrl: data.logoUrl || null,
         logoId: (data as any).logoId || null,
         menuImageUrl: (data as any).menuImageUrl || null,

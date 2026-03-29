@@ -3,29 +3,30 @@
 // =========================
 
 model Restaurant {
-  id            String   @id @default(cuid())
-  name          String?
-  location      String?
-  logoUrl       String?
-  logoId        String?
-  logo          File?    @relation("RestaurantLogo", fields: [logoId], references: [id])
-  menuImageUrl  String?
-  menuImageId   String?
-  menuImage     File?    @relation("RestaurantMenuImage", fields: [menuImageId], references: [id])
+  id           String  @id @default(cuid())
+  name         String?
+  location     String?
+  geoLocation  String?
+  logoUrl      String?
+  logoId       String?
+  logo         File?   @relation("RestaurantLogo", fields: [logoId], references: [id])
+  menuImageUrl String?
+  menuImageId  String?
+  menuImage    File?   @relation("RestaurantMenuImage", fields: [menuImageId], references: [id])
 
-  rating        Float?
+  rating Float?
 
-  noiselevel    String?
-  privacylevel  String?
+  noiselevel   String?
+  privacylevel String?
 
-  status        String   @default("DRAFT")
+  status String @default("DRAFT")
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // relations
-  menuItems     RestaurantMenu[]
-  features      RestaurantFeatureAssignment[]
+  menuItems RestaurantMenu[]
+  features  RestaurantFeatureAssignment[]
 
   @@schema("restaurant")
 }
@@ -35,12 +36,12 @@ model Restaurant {
 // =========================
 
 model Feature {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String  @id @default(cuid())
+  name        String  @unique
   description String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   assignments RestaurantFeatureAssignment[]
 
@@ -52,8 +53,8 @@ model RestaurantFeatureAssignment {
   restaurantId String
   featureId    String
 
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  feature      Feature    @relation(fields: [featureId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  feature    Feature    @relation(fields: [featureId], references: [id])
 
   @@unique([restaurantId, featureId])
   @@schema("restaurant")

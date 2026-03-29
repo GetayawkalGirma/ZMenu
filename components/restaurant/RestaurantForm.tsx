@@ -41,6 +41,7 @@ export function RestaurantForm({
   const [formData, setFormData] = useState<RestaurantFormData>({
     name: initialData?.name || "",
     location: initialData?.location || "",
+    geoLocation: initialData?.geoLocation || "",
     features: {
       isLuxury: initialData?.features?.isLuxury || false,
       isGrabAndGo: initialData?.features?.isGrabAndGo || false,
@@ -205,6 +206,15 @@ export function RestaurantForm({
             error={errors.location}
             placeholder="Enter restaurant location"
             required
+          />
+        </div>
+        <div>
+          <Input
+            label="Geo Location (Link, Coordinates, or Embed)"
+            value={formData.geoLocation}
+            onChange={(e) => handleInputChange("geoLocation", e.target.value)}
+            error={errors.geoLocation}
+            placeholder="Paste Google Maps link, coordinates, or <iframe> embed code"
           />
         </div>
 
