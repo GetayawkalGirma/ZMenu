@@ -27,8 +27,6 @@ model Restaurant {
   // relations
   menuItems RestaurantMenu[]
   features  RestaurantFeatureAssignment[]
-
-  @@schema("restaurant")
 }
 
 // =========================
@@ -44,8 +42,6 @@ model Feature {
   updatedAt DateTime @updatedAt
 
   assignments RestaurantFeatureAssignment[]
-
-  @@schema("restaurant")
 }
 
 model RestaurantFeatureAssignment {
@@ -57,5 +53,4 @@ model RestaurantFeatureAssignment {
   feature    Feature    @relation(fields: [featureId], references: [id])
 
   @@unique([restaurantId, featureId])
-  @@schema("restaurant")
 }
