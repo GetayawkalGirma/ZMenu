@@ -91,6 +91,24 @@ export class RestaurantRepository {
   // Get all restaurants
   static async getAll(): Promise<Restaurant[]> {
     const restaurants = await prisma.restaurant.findMany({
+      include: {
+        logo: true,
+        menuImage: true,
+        features: {
+          include: {
+            feature: true,
+          },
+        },
+        menuItems: {
+          include: {
+            menuItem: {
+              include: {
+                category: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -103,9 +121,16 @@ export class RestaurantRepository {
     const restaurant = await prisma.restaurant.findUnique({
       where: { id },
       include: {
+        logo: true,
+        menuImage: true,
         menuItems: {
           include: {
-            menuItem: true,
+            menuItem: {
+              include: {
+                image: true,
+              },
+            },
+            image: true, // restaurant-specific image override
           },
         },
         features: {
@@ -119,6 +144,50 @@ export class RestaurantRepository {
     return restaurant;
   }
 
+  // Paginated restaurants with search and status filter
+  static async getPaginated(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    status?: string;
+  }): Promise<{ items: Restaurant[]; total: number }> {
+    const { page, pageSize, search, status } = params;
+    const skip = (page - 1) * pageSize;
+
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { location: { contains: search, mode: "insensitive" } },
+      ];
+    }
+    if (status) {
+      where.status = status;
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.restaurant.findMany({
+        where,
+        include: {
+          logo: true,
+          menuImage: true,
+          features: { include: { feature: true } },
+          menuItems: {
+            include: {
+              menuItem: { include: { category: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.restaurant.count({ where }),
+    ]);
+
+    return { items: items as unknown as Restaurant[], total };
+  }
+
   // Search restaurants
   static async search(query: string): Promise<Restaurant[]> {
     const restaurants = await prisma.restaurant.findMany({
@@ -127,6 +196,10 @@ export class RestaurantRepository {
           { name: { contains: query, mode: "insensitive" } },
           { location: { contains: query, mode: "insensitive" } },
         ],
+      },
+      include: {
+        logo: true,
+        menuImage: true,
       },
       orderBy: {
         createdAt: "desc",

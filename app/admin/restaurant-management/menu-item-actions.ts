@@ -2,7 +2,7 @@
 
 import { MenuItemService, RestaurantMenuService } from '@/services/menu-item/menu-item.service';
 import { revalidatePath } from 'next/cache';
-import type { MealFormData } from '@/lib/types/meal';
+import type { MealFormData, RestaurantMenuFormData } from '@/lib/types/meal';
 
 // Get all menu items
 export async function getMenuItems() {
@@ -81,6 +81,18 @@ export async function deleteMenuItem(id: string) {
   } catch (error) {
     console.error('Failed to delete menu item:', error);
     return { success: false, error: 'Failed to delete menu item' };
+  }
+}
+
+// Link an existing global MenuItem to a restaurant with restaurant-specific details
+export async function linkMenuItemToRestaurant(data: RestaurantMenuFormData) {
+  try {
+    const result = await RestaurantMenuService.linkMenuItemToRestaurant(data);
+    revalidatePath(`/admin/restaurant-management/${data.restaurantId}/edit`);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to link menu item to restaurant:', error);
+    return { success: false, error: 'Failed to link menu item to restaurant' };
   }
 }
 

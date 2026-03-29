@@ -71,6 +71,15 @@ export async function getRestaurants() {
   return await RestaurantService.getAllRestaurants();
 }
 
+export async function getPaginatedRestaurants(params: {
+  page: number;
+  pageSize: number;
+  search?: string;
+  status?: string;
+}) {
+  return await RestaurantService.getRestaurantsPaginated(params);
+}
+
 export async function getRestaurant(id: string) {
   return await RestaurantService.getRestaurantById(id);
 }

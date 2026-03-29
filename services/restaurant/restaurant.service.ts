@@ -50,6 +50,15 @@ export class RestaurantService {
         logoId,
         menuImageId,
       } as any);
+
+      // Hydrate URLs
+      if (restaurant) {
+        const logo = (restaurant as any).logo;
+        const menuImage = (restaurant as any).menuImage;
+        if (logo) (restaurant as any).logoUrl = fileService.getPublicUrl(logo.path);
+        if (menuImage) (restaurant as any).menuImageUrl = fileService.getPublicUrl(menuImage.path);
+      }
+
       return { success: true, data: restaurant };
     } catch (error) {
       console.error("RestaurantService.createRestaurant error:", error);
@@ -107,6 +116,15 @@ export class RestaurantService {
         logoId: logoId === null ? null : (logoId ?? existing?.logoId),
         menuImageId: menuImageId === null ? null : (menuImageId ?? existing?.menuImageId),
       } as any);
+
+      // Hydrate URLs
+      if (restaurant) {
+        const logo = (restaurant as any).logo;
+        const menuImage = (restaurant as any).menuImage;
+        if (logo) (restaurant as any).logoUrl = fileService.getPublicUrl(logo.path);
+        if (menuImage) (restaurant as any).menuImageUrl = fileService.getPublicUrl(menuImage.path);
+      }
+
       return { success: true, data: restaurant };
     } catch (error) {
       console.error("RestaurantService.updateRestaurant error:", error);
@@ -123,7 +141,37 @@ export class RestaurantService {
   // Delete restaurant
   static async deleteRestaurant(id: string): Promise<ServiceResult<void>> {
     try {
+      // 1. Fetch restaurant with all files to clean up
+      const restaurant = (await RestaurantRepository.getById(id)) as any;
+      if (!restaurant) {
+        return { success: false, error: "Restaurant not found" };
+      }
+
+      // 2. Collect all file IDs associated with this restaurant
+      const fileIds = new Set<string>();
+      if (restaurant.logoId) fileIds.add(restaurant.logoId);
+      if (restaurant.menuImageId) fileIds.add(restaurant.menuImageId);
+      
+      // Collect images from the restaurant's menu items
+      if (restaurant.menuItems) {
+        restaurant.menuItems.forEach((rm: any) => {
+          if (rm.imageId) fileIds.add(rm.imageId);
+        });
+      }
+
+      // 3. Delete files from storage and DB (with reference counting in fileService)
+      for (const fileId of fileIds) {
+        try {
+          await fileService.deleteFile(fileId);
+        } catch (fileError) {
+          console.error(`Failed to delete file ${fileId}:`, fileError);
+          // Continue with other files/deletion even if one file fails
+        }
+      }
+
+      // 4. Delete the restaurant record (cascades to RestaurantMenu and assignments)
       await RestaurantRepository.delete(id);
+
       return { success: true };
     } catch (error) {
       console.error("RestaurantService.deleteRestaurant error:", error);
@@ -137,10 +185,84 @@ export class RestaurantService {
     }
   }
 
+  // Get paginated restaurants with search/filter
+  static async getRestaurantsPaginated(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    status?: string;
+  }): Promise<ServiceResult<{ items: Restaurant[]; total: number; totalPages: number }>> {
+    try {
+      const { items, total } = await RestaurantRepository.getPaginated(params);
+
+      items.forEach((r) => {
+        const res = r as any;
+        if (res.logo) res.logoUrl = fileService.getPublicUrl(res.logo.path);
+        if (res.menuImage) res.menuImageUrl = fileService.getPublicUrl(res.menuImage.path);
+
+        const menuItems = res.menuItems || [];
+        res.mealCount = menuItems.length;
+
+        const prices = menuItems.map((mi: any) => mi.price).filter((p: any) => typeof p === "number");
+        res.avgPrice = prices.length > 0 ? prices.reduce((a: number, b: number) => a + b, 0) / prices.length : 0;
+
+        const categoryNames = new Set<string>();
+        menuItems.forEach((mi: any) => {
+          if (mi.menuItem?.category?.name) categoryNames.add(mi.menuItem.category.name);
+        });
+        res.categories = Array.from(categoryNames);
+
+        if (res.features) {
+          res.featureLabels = res.features.map((f: any) => f.feature?.name).filter(Boolean);
+        }
+      });
+
+      return {
+        success: true,
+        data: { items, total, totalPages: Math.ceil(total / params.pageSize) },
+      };
+    } catch (error) {
+      console.error("RestaurantService.getRestaurantsPaginated error:", error);
+      return { success: false, error: "Failed to fetch restaurants" };
+    }
+  }
+
   // Get all restaurants
   static async getAllRestaurants(): Promise<ServiceResult<Restaurant[]>> {
     try {
       const restaurants = await RestaurantRepository.getAll();
+      
+      // Hydrate URLs and Metrics
+      restaurants.forEach(r => {
+        const res = r as any;
+        
+        // Hydrate URLs
+        if (res.logo) res.logoUrl = fileService.getPublicUrl(res.logo.path);
+        if (res.menuImage) res.menuImageUrl = fileService.getPublicUrl(res.menuImage.path);
+
+        // Compute Metrics
+        const menuItems = res.menuItems || [];
+        res.mealCount = menuItems.length;
+        
+        // Average Price
+        const prices = menuItems.map((mi: any) => mi.price).filter((p: any) => typeof p === 'number');
+        res.avgPrice = prices.length > 0 ? prices.reduce((a: number, b: number) => a + b, 0) / prices.length : 0;
+        
+        // Unique Categories
+        const categoryNames = new Set<string>();
+        menuItems.forEach((mi: any) => {
+          if (mi.menuItem?.category?.name) {
+            categoryNames.add(mi.menuItem.category.name);
+          }
+        });
+        res.categories = Array.from(categoryNames);
+
+        // Features simplified for UI
+        if (res.features) {
+          res.featureLabels = res.features.map((f: any) => f.feature?.name).filter(Boolean);
+        }
+      });
+
       return { success: true, data: restaurants };
     } catch (error) {
       console.error("RestaurantService.getAllRestaurants error:", error);
@@ -165,7 +287,23 @@ export class RestaurantService {
         return { success: false, error: "Restaurant not found" };
       }
 
-      return { success: true, data: restaurant };
+      // Hydrate URLs
+      const res = restaurant as any;
+      if (res.logo) res.logoUrl = fileService.getPublicUrl(res.logo.path);
+      if (res.menuImage) res.menuImageUrl = fileService.getPublicUrl(res.menuImage.path);
+      
+      // Hydrate Menu Items
+      if (res.menuItems) {
+        res.menuItems.forEach((rm: any) => {
+          if (rm.image) {
+            rm.imageUrl = fileService.getPublicUrl(rm.image.path);
+          } else if (rm.menuItem?.image) {
+            rm.imageUrl = fileService.getPublicUrl(rm.menuItem.image.path);
+          }
+        });
+      }
+
+      return { success: true, data: restaurant as any as Restaurant };
     } catch (error) {
       console.error("RestaurantService.getRestaurantById error:", error);
       return {

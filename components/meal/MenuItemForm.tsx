@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Input } from "@/components/ui";
-import { MenuItemFormData, Category, MenuItem } from "@/lib/types/meal";
+import { Button } from "@/components/ui";
+import { X, Upload, ImageIcon } from "lucide-react";
+import type { MenuItemFormData, Category, MenuItem } from "@/lib/types/meal";
 import {
   searchMenuItems,
   getCategories,
@@ -55,11 +56,9 @@ export function MenuItemForm({
 
   const handleInputChange = (field: keyof MenuItemFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-
     if (field === "name" && value.length >= 2) {
       handleSearch(value);
     } else if (field === "name") {
@@ -88,14 +87,10 @@ export function MenuItemForm({
       tags: item.tags || prev.tags,
     }));
     setTagsText(item.tags?.join(", ") || "");
-    
-    // Pre-populate image from suggestion if it exists
     if (item.imageId) {
-      const url = `/api/files/${item.imageId}`;
-      setImagePreview(url);
+      setImagePreview(`/api/files/${item.imageId}`);
       setRemoveImage(false);
     }
-    
     setShowSuggestions(false);
   };
 
@@ -103,23 +98,21 @@ export function MenuItemForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     const maxSizeMB = 5;
 
     if (!allowedTypes.includes(file.type)) {
       setErrors((prev) => ({
         ...prev,
-        image: `File type ${file.type} is not allowed. Allowed types: ${allowedTypes.join(", ")}`,
+        image: `File type ${file.type} is not allowed. Use JPEG, PNG, or WebP.`,
       }));
       return;
     }
 
-    const maxSizeBytes = maxSizeMB * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
+    if (file.size > maxSizeMB * 1024 * 1024) {
       setErrors((prev) => ({
         ...prev,
-        image: `File size exceeds ${maxSizeMB}MB limit. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        image: `File exceeds ${maxSizeMB}MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB).`,
       }));
       return;
     }
@@ -127,10 +120,7 @@ export function MenuItemForm({
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
     setRemoveImage(false);
-    
-    if (errors.image) {
-      setErrors((prev) => ({ ...prev, image: "" }));
-    }
+    if (errors.image) setErrors((prev) => ({ ...prev, image: "" }));
   };
 
   const handleRemoveImage = () => {
@@ -153,153 +143,185 @@ export function MenuItemForm({
 
     onSubmit({
       ...formData,
-      tags: tagsText.split(",").map(s => s.trim()).filter(s => s !== ""),
+      tags: tagsText
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== ""),
       image: imageFile || undefined,
       removeImage,
     });
   };
 
+  const inputClass = (hasError?: boolean) =>
+    `w-full h-10 rounded-lg border bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+      hasError ? "border-red-400" : "border-gray-200"
+    }`;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
-          Menu Item Information (Abstract)
-        </h4>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Fix: Suggestions dropdown positioned relative to a wrapper around the input field alone */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Meal Name
-            </label>
-            <div className="relative">
-              <input
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="e.g. Beef Burger"
-                className={`w-full h-10 rounded-md border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"}`}
-                required
-              />
-              {errors.name && (
-                <p className="text-xs text-red-600 mt-1">{errors.name}</p>
-              )}
-
-              {showSuggestions && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto top-full left-0">
-                  {suggestions.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 transition-colors border-b last:border-0 border-gray-100"
-                      onClick={() => selectSuggestion(item)}
-                    >
-                      <div className="font-medium text-gray-900">
-                        {item.name}
-                      </div>
-                      {item.description && (
-                        <div className="text-xs text-gray-500 truncate">
-                          {item.description}
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              value={formData.categoryId}
-              onChange={(e) => handleInputChange("categoryId", e.target.value)}
-              className={`w-full h-10 rounded-md border bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${errors.categoryId ? "border-red-500" : "border-gray-300"}`}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Name + Category */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">
+            Meal Name <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              placeholder="e.g. Burger, Shiro, Pizza"
+              className={inputClass(!!errors.name)}
               required
-            >
-              <option value="">Select a category...</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-            {errors.categoryId && (
-              <p className="text-xs text-red-600 mt-1">{errors.categoryId}</p>
+            />
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1">{errors.name}</p>
             )}
-          </div>
-        </div>
 
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
-            rows={2}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            placeholder="General description..."
-          />
-        </div>
-
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tags
-          </label>
-          <input
-            value={tagsText}
-            onChange={(e) => setTagsText(e.target.value)}
-            className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            placeholder="fast-food, vegan... (comma separated)"
-          />
-        </div>
-
-        {/* Global Image Upload */}
-        <div className="mt-6 border-t border-gray-100 pt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Default Meal Image (Global)
-          </label>
-          <div className="flex flex-col space-y-3">
-            {imagePreview && (
-              <div className="relative w-full max-w-sm h-48 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 group">
-                <img
-                  src={imagePreview}
-                  alt="Global preview"
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                  title="Remove image"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+            {showSuggestions && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto">
+                {suggestions.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 transition-colors border-b last:border-0 border-gray-50"
+                    onClick={() => selectSuggestion(item)}
+                  >
+                    <div className="font-medium text-gray-900">{item.name}</div>
+                    {item.description && (
+                      <div className="text-xs text-gray-500 truncate mt-0.5">
+                        {item.description}
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
-            <div className="flex-1">
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">
+            Category <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={formData.categoryId}
+            onChange={(e) => handleInputChange("categoryId", e.target.value)}
+            className={inputClass(!!errors.categoryId)}
+            required
+          >
+            <option value="">Select a category...</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          {errors.categoryId && (
+            <p className="text-xs text-red-500 mt-1">{errors.categoryId}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-gray-700">
+          Description
+        </label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => handleInputChange("description", e.target.value)}
+          rows={3}
+          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          placeholder="A general description of this meal type..."
+        />
+      </div>
+
+      {/* Tags */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-gray-700">Tags</label>
+        <input
+          value={tagsText}
+          onChange={(e) => setTagsText(e.target.value)}
+          className={inputClass()}
+          placeholder="fast-food, vegan, popular... (comma separated)"
+        />
+        {tagsText && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {tagsText
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+              .map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100"
+                >
+                  {tag}
+                </span>
+              ))}
+          </div>
+        )}
+      </div>
+
+      {/* Image Upload */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-gray-700">
+          Default Image
+        </label>
+        <div className="flex flex-col gap-3">
+          {imagePreview ? (
+            <div className="relative w-full max-w-sm h-48 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 group">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center w-full max-w-sm h-32 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+              <ImageIcon className="h-8 w-8 text-gray-300 mb-2" />
+              <span className="text-xs text-gray-500 font-medium">
+                Click to upload
+              </span>
+              <span className="text-[10px] text-gray-400 mt-0.5">
+                JPEG, PNG, or WebP (max 5MB)
+              </span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
-                className={`w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${errors.image ? 'border-red-500' : ''}`}
+                className="hidden"
               />
-              {errors.image && <p className="text-xs text-red-600 mt-1">{errors.image}</p>}
-              <p className="text-xs text-gray-500 mt-2">
-                Upload a default photo for this meal type (JPEG, PNG, or WebP, max 5MB). 
-                Restaurants can override this with their own photos.
-              </p>
-            </div>
-          </div>
+            </label>
+          )}
+          {imagePreview && (
+            <label className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-medium cursor-pointer hover:text-blue-700 transition-colors w-fit">
+              <Upload className="h-3.5 w-3.5" />
+              Replace image
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+          )}
+          {errors.image && (
+            <p className="text-xs text-red-500">{errors.image}</p>
+          )}
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
         {onCancel && (
           <Button
             type="button"
@@ -311,7 +333,7 @@ export function MenuItemForm({
           </Button>
         )}
         <Button type="submit" loading={loading} disabled={loading}>
-          {initialData?.name ? "Update Menu Item" : "Create Menu Item"}
+          {initialData?.name ? "Update Meal" : "Create Meal"}
         </Button>
       </div>
     </form>
