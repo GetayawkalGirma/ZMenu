@@ -1,0 +1,60 @@
+// =========================
+// RESTAURANT
+// =========================
+
+model Restaurant {
+  id            String   @id @default(cuid())
+  name          String?
+  location      String?
+  logoUrl       String?
+  logoId        String?
+  logo          File?    @relation("RestaurantLogo", fields: [logoId], references: [id])
+  menuImageUrl  String?
+  menuImageId   String?
+  menuImage     File?    @relation("RestaurantMenuImage", fields: [menuImageId], references: [id])
+
+  rating        Float?
+
+  noiselevel    String?
+  privacylevel  String?
+
+  status        String   @default("DRAFT")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // relations
+  menuItems     RestaurantMenu[]
+  features      RestaurantFeatureAssignment[]
+
+  @@schema("restaurant")
+}
+
+// =========================
+// FEATURES (WIFI, PARKING, etc.)
+// =========================
+
+model Feature {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments RestaurantFeatureAssignment[]
+
+  @@schema("restaurant")
+}
+
+model RestaurantFeatureAssignment {
+  id           String @id @default(cuid())
+  restaurantId String
+  featureId    String
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  feature      Feature    @relation(fields: [featureId], references: [id])
+
+  @@unique([restaurantId, featureId])
+  @@schema("restaurant")
+}

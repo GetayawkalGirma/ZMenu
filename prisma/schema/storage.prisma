@@ -1,0 +1,24 @@
+// =========================
+// STORAGE / FILE MANAGEMENT
+// =========================
+
+model File {
+  id        String   @id @default(cuid())
+  hash      String   @unique // SHA-256 for deduplication
+  filename  String
+  extension String
+  mimeType  String
+  size      Int
+  path      String   // Path relative to storage root
+  
+  // Relations back to entities (optional but good for tracking)
+  menuItems       MenuItem[]
+  restaurantMenus RestaurantMenu[]
+  restaurantLogos Restaurant[] @relation("RestaurantLogo")
+  restaurantMenusImages Restaurant[] @relation("RestaurantMenuImage")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("storage")
+}

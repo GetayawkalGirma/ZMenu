@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
+/* ZMenu Hunger-Inducing Color Palette */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 60% - Clean Background */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+
+  /* 30% - Foodie Colors */
+  --accent-warm: #dc2626; /* Warm Red - stimulates hunger */
+  --accent-earth: #92400e; /* Warm Brown - wholesome */
+  --accent-fresh: #16a34a; /* Green - fresh/healthy */
+
+  /* 10% - Action Colors */
+  --cta-primary: #ea580c; /* Orange - impulse buying */
+  --cta-hover: #dc2626; /* Red - urgency */
+
+  /* Override dark mode */
+  --background: #ffffff !important;
+  --foreground: #171717 !important;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Force light mode - override everything */
+html,
+body {
+  background-color: #ffffff !important;
+  color: #171717 !important;
 }
 
+/* Override dark mode */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html,
+  body {
+    background-color: #ffffff !important;
+    color: #171717 !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom hunger-triggering utilities */
+.hunger-red {
+  color: var(--accent-warm);
+}
+
+.hunger-orange {
+  color: var(--cta-primary);
+}
+
+.cta-button {
+  background-color: var(--cta-primary);
+  transition: background-color 0.2s ease;
+}
+
+.cta-button:hover {
+  background-color: var(--cta-hover);
+}
+
+/* Food card hover effects to increase appetite */
+.food-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.food-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.2);
+}
+
+/* Price styling to emphasize value */
+.price-highlight {
+  color: var(--accent-warm);
+  font-weight: 600;
+}
+
+/* Restaurant name styling */
+.restaurant-name {
+  color: var(--accent-earth);
+  font-weight: 700;
 }

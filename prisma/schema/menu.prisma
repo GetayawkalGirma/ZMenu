@@ -1,0 +1,131 @@
+// =========================
+// ENUMS
+// =========================
+
+enum FoodType {
+  BREAKFAST
+  LUNCH
+  SNACK
+  DINNER
+  EXTRA
+
+  @@schema("menu")
+}
+
+enum FoodCategoryType {
+  FOOD
+  DRINK
+  EXTRA
+
+  @@schema("menu")
+}
+
+enum DietaryCategory {
+  YETSOM
+  YEFITSIK
+
+  @@schema("menu")
+}
+
+enum PortionSize {
+  ONE_PERSON
+  TWO_PEOPLE
+  THREE_PEOPLE
+  FAMILY
+
+  @@schema("menu")
+}
+
+// =========================
+// CATEGORY (GLOBAL GROUPING)
+// =========================
+
+model Category {
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  foodType         FoodType
+  categoryType     FoodCategoryType
+  dietaryCategory  DietaryCategory
+  sortOrder        Int?
+  isActive         Boolean           @default(true)
+
+  menuItems        MenuItem[]
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@schema("menu")
+}
+
+// =========================
+// GLOBAL MENU ITEM (ABSTRACT FOOD)
+// =========================
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "Burger", "Shiro", "Pizza"
+  description String?
+
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  tags        String[] // ["fast-food", "ethiopian", "popular"]
+
+  // 🔥 Aggregated analytics (NOT source of truth)
+  avgPrice    Float?
+  minPrice    Float?
+  maxPrice    Float?
+  priceCount  Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  imageId     String?
+  image       File? @relation(fields: [imageId], references: [id])
+
+  restaurants RestaurantMenu[]
+
+  @@schema("menu")
+}
+
+// =========================
+// RESTAURANT-SPECIFIC MENU (REAL DATA)
+// =========================
+
+model RestaurantMenu {
+  id              String   @id @default(cuid())
+
+  restaurantId    String
+  menuItemId      String
+
+  // 🔥 REAL restaurant-specific properties
+  price           Float
+  portionSize     PortionSize?
+  spicyLevel      Int?      // 0–5 scale
+  preparationTime Int?      // minutes
+
+  ingredients     String[]  // restaurant-specific recipe
+  calories        Int?
+
+  isAvailable     Boolean   @default(true)
+
+  // UX / discovery improvements
+  isPopular       Boolean   @default(false)
+  isRecommended   Boolean   @default(false)
+
+  imageId         String?   // New robust image reference
+  image           File?     @relation(fields: [imageId], references: [id])
+  imageUrl        String?   // Keep for migration if needed
+
+  sortOrder       Int?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id])
+  menuItem         MenuItem   @relation(fields: [menuItemId], references: [id])
+
+  @@unique([restaurantId, menuItemId])
+  @@schema("menu")
+}
