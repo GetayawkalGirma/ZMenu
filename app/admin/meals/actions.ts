@@ -5,9 +5,38 @@ import {
   RestaurantMenuService,
 } from "@/services/menu-item/menu-item.service";
 import { revalidatePath } from "next/cache";
-import type { MealFormData } from "@/lib/types/meal";
+import type { MealFormData, MenuItem, Category } from "@/lib/types/meal";
 
-// Get all menu items (meals)
+export async function getPaginatedMeals(params: {
+  page: number;
+  pageSize: number;
+  search?: string;
+  categoryId?: string;
+}) {
+  try {
+    const result = await MenuItemService.getMenuItemsPaginated(params);
+    return {
+      success: true,
+      data: result.items,
+      total: result.total,
+      totalPages: result.totalPages,
+    };
+  } catch (error) {
+    console.error("Failed to get paginated meals:", error);
+    return { success: false, error: "Failed to fetch meals", data: [] as MenuItem[], total: 0, totalPages: 0 };
+  }
+}
+
+export async function getCategories() {
+  try {
+    const categories = await MenuItemService.getAllCategories();
+    return { success: true, data: categories };
+  } catch (error) {
+    console.error("Failed to get categories:", error);
+    return { success: false, error: "Failed to fetch categories", data: [] as Category[] };
+  }
+}
+
 export async function getAllMeals() {
   try {
     const meals = await MenuItemService.getAllMenuItems();
@@ -18,7 +47,6 @@ export async function getAllMeals() {
   }
 }
 
-// Get meal by ID
 export async function getMealById(id: string) {
   try {
     const meal = await MenuItemService.getMenuItemById(id);

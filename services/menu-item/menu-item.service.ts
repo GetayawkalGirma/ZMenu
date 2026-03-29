@@ -15,7 +15,13 @@ export class MenuItemService {
   // Get all menu items
   static async getAllMenuItems(): Promise<MenuItem[]> {
     try {
-      return await MenuItemRepository.getAll();
+      const items = await MenuItemRepository.getAll();
+      items.forEach(item => {
+        if ((item as any).image) {
+          (item as any).imageUrl = fileService.getPublicUrl((item as any).image.path);
+        }
+      });
+      return items;
     } catch (error) {
       console.error("Failed to get menu items:", error);
       throw new Error("Failed to fetch menu items");
@@ -25,7 +31,11 @@ export class MenuItemService {
   // Get menu item by ID
   static async getMenuItemById(id: string): Promise<MenuItem | null> {
     try {
-      return await MenuItemRepository.getById(id);
+      const item = await MenuItemRepository.getById(id);
+      if (item && (item as any).image) {
+        (item as any).imageUrl = fileService.getPublicUrl((item as any).image.path);
+      }
+      return item;
     } catch (error) {
       console.error("Failed to get menu item:", error);
       throw new Error("Failed to fetch menu item");
@@ -35,17 +45,55 @@ export class MenuItemService {
   // Search menu items
   static async searchMenuItems(query: string): Promise<MenuItem[]> {
     try {
-      return await MenuItemRepository.search(query);
+      const items = await MenuItemRepository.search(query);
+      items.forEach(item => {
+        if ((item as any).image) {
+          (item as any).imageUrl = fileService.getPublicUrl((item as any).image.path);
+        }
+      });
+      return items;
     } catch (error) {
       console.error("Failed to search meals:", error);
       throw new Error("Failed to search meals");
     }
   }
 
+  static async getMenuItemsPaginated(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    categoryId?: string;
+  }): Promise<{ items: MenuItem[]; total: number; totalPages: number }> {
+    try {
+      const { items, total } = await MenuItemRepository.getPaginated(params);
+      items.forEach((item) => {
+        if ((item as any).image) {
+          (item as any).imageUrl = fileService.getPublicUrl(
+            (item as any).image.path,
+          );
+        }
+      });
+      return {
+        items,
+        total,
+        totalPages: Math.ceil(total / params.pageSize),
+      };
+    } catch (error) {
+      console.error("Failed to get paginated menu items:", error);
+      throw new Error("Failed to fetch menu items");
+    }
+  }
+
   // Get menu items by category
   static async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
     try {
-      return await MenuItemRepository.getByCategory(categoryId);
+      const items = await MenuItemRepository.getByCategory(categoryId);
+      items.forEach(item => {
+        if ((item as any).image) {
+          (item as any).imageUrl = fileService.getPublicUrl((item as any).image.path);
+        }
+      });
+      return items;
     } catch (error) {
       console.error("Failed to get menu items by category:", error);
       throw new Error("Failed to fetch menu items by category");
@@ -107,6 +155,10 @@ export class MenuItemService {
           imageId: imageId === null ? null : (imageId ?? existingItem.imageId ?? undefined),
         });
 
+        if ((updatedItem as any).image) {
+          (updatedItem as any).imageUrl = fileService.getPublicUrl((updatedItem as any).image.path);
+        }
+
         return { menuItem: updatedItem, isNew: false };
       } else {
         // Create new item
@@ -117,6 +169,10 @@ export class MenuItemService {
           tags: data.tags,
           imageId: imageId || undefined,
         });
+
+        if ((newItem as any).image) {
+          (newItem as any).imageUrl = fileService.getPublicUrl((newItem as any).image.path);
+        }
 
         return { menuItem: newItem, isNew: true };
       }
@@ -145,10 +201,16 @@ export class MenuItemService {
         imageId = null;
       }
 
-      return await MenuItemRepository.update(id, {
+      const updatedItem = await MenuItemRepository.update(id, {
         ...data,
         imageId: imageId === null ? null : (imageId ?? (data as any).imageId),
       });
+
+      if ((updatedItem as any).image) {
+        (updatedItem as any).imageUrl = fileService.getPublicUrl((updatedItem as any).image.path);
+      }
+
+      return updatedItem;
     } catch (error) {
       console.error("Failed to update menu item:", error);
       throw new Error("Failed to update menu item");
@@ -182,12 +244,106 @@ export class RestaurantMenuService {
     restaurantId: string,
   ): Promise<RestaurantMenu[]> {
     try {
-      return await RestaurantMenuRepository.getRestaurantMenuItems(
+      const items = await RestaurantMenuRepository.getRestaurantMenuItems(
         restaurantId,
       );
+
+      items.forEach(rm => {
+        if ((rm as any).image) {
+          (rm as any).imageUrl = fileService.getPublicUrl((rm as any).image.path);
+        }
+        if ((rm as any).menuItem?.image) {
+          (rm as any).menuItem.imageUrl = fileService.getPublicUrl((rm as any).menuItem.image.path);
+        }
+      });
+
+      return items;
     } catch (error) {
       console.error("Failed to get restaurant menu:", error);
       throw new Error("Failed to fetch restaurant menu");
+    }
+  }
+
+  // Link an existing global MenuItem to a restaurant with restaurant-specific details
+  static async linkMenuItemToRestaurant(
+    data: import("@/lib/types/meal").RestaurantMenuFormData,
+  ): Promise<RestaurantMenu> {
+    try {
+      let imageId: string | undefined | null;
+
+      if (data.image && data.image instanceof File) {
+        const buffer = Buffer.from(await data.image.arrayBuffer());
+        const uploadedFile = await fileService.uploadFile(
+          buffer,
+          data.image.name,
+          data.image.type,
+        );
+        imageId = uploadedFile.id;
+      } else if (data.removeImage) {
+        imageId = null;
+      }
+
+      // Check if link already exists
+      const existing = await RestaurantMenuRepository.getRestaurantMenuItems(data.restaurantId);
+      const existingLink = existing.find((rm) => rm.menuItemId === data.menuItemId);
+
+      if (existingLink) {
+        const updated = await RestaurantMenuRepository.updateRestaurantMenuItem(
+          existingLink.id,
+          {
+            price: data.price,
+            portionSize: data.portionSize,
+            spicyLevel: data.spicyLevel,
+            preparationTime: data.preparationTime,
+            ingredients: data.ingredients,
+            calories: data.calories,
+            isAvailable: data.isAvailable,
+            isPopular: data.isPopular,
+            isRecommended: data.isRecommended,
+            sortOrder: data.sortOrder,
+            name: data.name,
+            description: data.description,
+            foodCategoryType: data.foodCategoryType,
+            dietaryCategory: data.dietaryCategory,
+            imageId: imageId === null ? null : (imageId ?? existingLink.imageId ?? undefined),
+          },
+        );
+        if ((updated as any).image) {
+          (updated as any).imageUrl = fileService.getPublicUrl((updated as any).image.path);
+        }
+        return updated;
+      }
+
+      const rm = await RestaurantMenuRepository.addMenuItemToRestaurant({
+        restaurantId: data.restaurantId,
+        menuItemId: data.menuItemId,
+        price: data.price,
+        portionSize: data.portionSize,
+        spicyLevel: data.spicyLevel,
+        preparationTime: data.preparationTime,
+        ingredients: data.ingredients,
+        calories: data.calories,
+        isAvailable: data.isAvailable,
+        isPopular: data.isPopular,
+        isRecommended: data.isRecommended,
+        sortOrder: data.sortOrder,
+        name: data.name,
+        description: data.description,
+        foodCategoryType: data.foodCategoryType,
+        dietaryCategory: data.dietaryCategory,
+        imageId: imageId || undefined,
+      });
+
+      if ((rm as any).image) {
+        (rm as any).imageUrl = fileService.getPublicUrl((rm as any).image.path);
+      }
+      if ((rm as any).menuItem?.image) {
+        (rm as any).menuItem.imageUrl = fileService.getPublicUrl((rm as any).menuItem.image.path);
+      }
+      return rm;
+    } catch (error) {
+      console.error("Failed to link menu item to restaurant:", error);
+      throw new Error("Failed to link menu item to restaurant");
     }
   }
 
@@ -247,8 +403,14 @@ export class RestaurantMenuService {
             imageUrl: data.imageUrl,
             imageId: imageId === null ? null : (imageId ?? existingLink.imageId ?? undefined),
             sortOrder: data.sortOrder,
+            name: data.restName || data.name,
+            description: data.restDescription || data.description,
           }
         );
+
+        if ((updatedRestaurantMenu as any).image) {
+          (updatedRestaurantMenu as any).imageUrl = fileService.getPublicUrl((updatedRestaurantMenu as any).image.path);
+        }
 
         return {
           restaurantMenu: updatedRestaurantMenu,
@@ -272,7 +434,13 @@ export class RestaurantMenuService {
           imageUrl: data.imageUrl,
           imageId: imageId || undefined,
           sortOrder: data.sortOrder,
+          name: data.restName || data.name,
+          description: data.restDescription || data.description,
         });
+
+        if ((restaurantMenu as any).image) {
+          (restaurantMenu as any).imageUrl = fileService.getPublicUrl((restaurantMenu as any).image.path);
+        }
 
         return { restaurantMenu, menuItem, isNew };
       }
@@ -302,7 +470,7 @@ export class RestaurantMenuService {
       }
 
       // Update restaurant-specific fields
-      return await RestaurantMenuRepository.updateRestaurantMenuItem(id, {
+      const updatedItem = await RestaurantMenuRepository.updateRestaurantMenuItem(id, {
         price: data.price,
         portionSize: data.portionSize,
         spicyLevel: data.spicyLevel,
@@ -316,6 +484,12 @@ export class RestaurantMenuService {
         imageId: imageId === null ? null : (imageId ?? (data as any).imageId),
         sortOrder: data.sortOrder,
       });
+
+      if ((updatedItem as any).image) {
+        (updatedItem as any).imageUrl = fileService.getPublicUrl((updatedItem as any).image.path);
+      }
+
+      return updatedItem;
     } catch (error) {
       console.error("Failed to update restaurant menu item:", error);
       throw new Error("Failed to update restaurant menu item");

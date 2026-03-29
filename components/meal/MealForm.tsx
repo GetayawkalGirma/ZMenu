@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Button,
   Input,
@@ -10,8 +10,8 @@ import {
   CardContent,
   Badge,
 } from "@/components/ui";
-import { MealFormData, PortionSize, MenuItem } from "@/lib/types/meal";
-import { searchMenuItems } from "@/app/admin/restaurant-management/menu-item-actions";
+import { MealFormData, PortionSize, MenuItem, Category } from "@/lib/types/meal";
+import { searchMenuItems, getCategories } from "@/app/admin/restaurant-management/menu-item-actions";
 
 interface MealFormProps {
   onSubmit: (data: MealFormData) => void;
@@ -42,6 +42,8 @@ export function MealForm({
     sortOrder: initialData?.sortOrder || 0,
     categoryId: initialData?.categoryId || "",
     tags: initialData?.tags || [],
+    restName: initialData?.restName || "",
+    restDescription: initialData?.restDescription || "",
     spicyLevel: initialData?.spicyLevel || 0,
   });
 
@@ -58,6 +60,17 @@ export function MealForm({
   const [suggestions, setSuggestions] = useState<MenuItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      const result = await getCategories();
+      if (result.success && result.data) {
+        setCategories(result.data as Category[]);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const handleInputChange = (field: keyof MealFormData, value: any) => {
     setFormData((prev) => ({
@@ -98,6 +111,8 @@ export function MealForm({
       ...prev,
       name: item.name,
       description: item.description || prev.description,
+      restName: prev.restName || item.name, // Suggest master name as restaurant name
+      restDescription: prev.restDescription || item.description || "",
       categoryId: item.categoryId || prev.categoryId,
       tags: item.tags || prev.tags,
     }));
@@ -131,6 +146,7 @@ export function MealForm({
     }
 
     setImageFile(file);
+    setFormData(prev => ({ ...prev, removeImage: false }));
 
     // Create preview
     const preview = URL.createObjectURL(file);
@@ -140,6 +156,12 @@ export function MealForm({
     if (errors.image) {
       setErrors((prev) => ({ ...prev, image: "" }));
     }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+    setFormData(prev => ({ ...prev, removeImage: true }));
   };
 
   const validateForm = (): boolean => {
@@ -199,26 +221,33 @@ export function MealForm({
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
+                Step 1: Choose Master Item
+              </label>
               <Input
-                label="Meal Name"
+                label="General Category Name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 error={errors.name}
-                placeholder="e.g. Beef Burger, Shiro, Margherita Pizza"
+                placeholder="search e.g. Burger, Pizza..."
                 required
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="bg-white"
               />
               
               {showSuggestions && mode === "restaurant" && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto border-t-0 rounded-t-none">
+                  <div className="p-2 bg-gray-50 border-b text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    Global Suggestions
+                  </div>
                   {suggestions.map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 transition-colors"
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 transition-colors border-b last:border-0"
                       onClick={() => selectSuggestion(item)}
                     >
-                      <div className="font-medium text-gray-900">{item.name}</div>
+                      <div className="font-bold text-gray-900">{item.name}</div>
                       {item.description && (
                         <div className="text-xs text-gray-500 truncate">{item.description}</div>
                       )}
@@ -229,7 +258,10 @@ export function MealForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
+                Global Classification
+              </label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
                 Category
               </label>
               <select
@@ -237,14 +269,14 @@ export function MealForm({
                 onChange={(e) =>
                   handleInputChange("categoryId", e.target.value)
                 }
-                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
               >
                 <option value="temp-category">Select a category...</option>
-                <option value="Breakfast">Breakfast</option>
-                <option value="Lunch">Lunch</option>
-                <option value="Dinner">Dinner</option>
-                <option value="Snack">Snack</option>
-                <option value="Drinks">Drinks</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -278,12 +310,42 @@ export function MealForm({
 
         {/* Restaurant Specific Settings */}
         {mode === "restaurant" && (
-          <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
-            <h4 className="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-4">
-              Restaurant-Specific Settings
+          <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-200 shadow-sm">
+            <h4 className="flex items-center text-sm font-bold text-blue-800 uppercase tracking-wider mb-4">
+              <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-2">2</span>
+              Step 2: Restaurant's Specific Offer
             </h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-blue-900 group">
+                  Restaurant Specific Name
+                  <span className="block text-[10px] font-normal text-blue-600 uppercase tracking-tight">How it appears on your menu (e.g. "Killer Burger")</span>
+                </label>
+                <Input
+                  value={formData.restName}
+                  onChange={(e) => handleInputChange("restName", e.target.value)}
+                  placeholder="e.g. Sheraton Special Cheese Burger"
+                  className="border-blue-300 focus:ring-blue-500 bg-white font-semibold"
+                />
+              </div>
+
+              <div className="space-y-2 group">
+                <label className="block text-sm font-bold text-blue-900">
+                  Specific Description
+                  <span className="block text-[10px] font-normal text-blue-600 uppercase tracking-tight">The unique story or recipe for your version</span>
+                </label>
+                <textarea
+                  value={formData.restDescription}
+                  onChange={(e) => handleInputChange("restDescription", e.target.value)}
+                  rows={2}
+                  className="w-full rounded-md border border-blue-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 font-medium"
+                  placeholder="This burger is made with 100% prime beef..."
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Input
                 label="Local Price (ETB)"
                 type="number"
@@ -410,30 +472,49 @@ export function MealForm({
         )}
 
         {/* Image Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Meal Image
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <label className="block text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">
+            Meal Appearance
           </label>
 
-          <div className="flex items-center space-x-4">
-            {imagePreview && (
-              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
-                <img
-                  src={imagePreview}
-                  alt="Meal preview"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="w-full md:w-40 h-40 rounded-xl overflow-hidden bg-white border-2 border-dashed border-gray-200 flex items-center justify-center relative group">
+              {imagePreview ? (
+                <>
+                  <img
+                    src={imagePreview}
+                    alt="Meal preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </>
+              ) : (
+                <div className="text-center p-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="mt-1 text-xs text-gray-400 font-medium">No Image</p>
+                </div>
+              )}
+            </div>
 
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col justify-center">
               <Input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
                 error={errors.image}
-                helperText="Upload a meal photo (JPEG, PNG, or WebP, max 5MB)"
+                className="cursor-pointer"
               />
+              <p className="mt-2 text-[10px] text-gray-500 uppercase font-bold tracking-tight">
+                Recommended: 800x600px, Under 5MB
+              </p>
             </div>
           </div>
         </div>

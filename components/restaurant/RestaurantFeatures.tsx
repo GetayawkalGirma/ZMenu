@@ -27,6 +27,7 @@ interface RestaurantFeaturesProps {
   selectedFeatures?: string[];
   onFeaturesChange?: (featureIds: string[]) => void;
   disabled?: boolean;
+  showSaveButton?: boolean;
 }
 
 export function RestaurantFeatures({
@@ -34,6 +35,7 @@ export function RestaurantFeatures({
   selectedFeatures = [],
   onFeaturesChange,
   disabled = false,
+  showSaveButton = true,
 }: RestaurantFeaturesProps) {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -405,7 +407,7 @@ export function RestaurantFeatures({
       )}
 
       {/* Save Button */}
-      {onFeaturesChange && !disabled && (
+      {showSaveButton && onFeaturesChange && !disabled && (
         <Button
           onClick={handleSaveFeatures}
           className="w-full"

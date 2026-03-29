@@ -12,6 +12,7 @@ export class MenuItemRepository {
     const menuItems = await prisma.menuItem.findMany({
       include: {
         category: true,
+        image: true,
       },
       orderBy: {
         name: "asc",
@@ -27,6 +28,7 @@ export class MenuItemRepository {
       where: { id },
       include: {
         category: true,
+        image: true,
         restaurants: {
           include: {
             restaurant: true,
@@ -58,6 +60,7 @@ export class MenuItemRepository {
       },
       include: {
         category: true,
+        image: true,
       },
     });
 
@@ -86,6 +89,7 @@ export class MenuItemRepository {
       },
       include: {
         category: true,
+        image: true,
       },
     });
 
@@ -109,12 +113,13 @@ export class MenuItemRepository {
     const menuItems = await prisma.menuItem.findMany({
       where: {
         OR: [
-          { name: { contains: query } },
-          { description: { contains: query } },
+          { name: { contains: query, mode: "insensitive" } },
+          { description: { contains: query, mode: "insensitive" } },
         ],
       },
       include: {
         category: true,
+        image: true,
       },
       orderBy: {
         name: "asc",
@@ -130,6 +135,7 @@ export class MenuItemRepository {
       where: { categoryId },
       include: {
         category: true,
+        image: true,
       },
       orderBy: {
         name: "asc",
@@ -137,6 +143,46 @@ export class MenuItemRepository {
     });
 
     return menuItems as unknown as MenuItem[];
+  }
+
+  static async getPaginated(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    categoryId?: string;
+  }): Promise<{ items: MenuItem[]; total: number }> {
+    const { page, pageSize, search, categoryId } = params;
+    const skip = (page - 1) * pageSize;
+
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { tags: { hasSome: [search.toLowerCase()] } },
+      ];
+    }
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.menuItem.findMany({
+        where,
+        include: {
+          category: true,
+          image: true,
+        },
+        orderBy: { name: "asc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.menuItem.count({ where }),
+    ]);
+
+    return { items: items as unknown as MenuItem[], total };
   }
 
   // Update aggregated analytics (avgPrice, etc.)
@@ -188,8 +234,10 @@ export class RestaurantMenuRepository {
         menuItem: {
           include: {
             category: true,
+            image: true,
           },
         },
+        image: true,
         restaurant: true,
       },
       orderBy: {
@@ -217,6 +265,10 @@ export class RestaurantMenuRepository {
       imageUrl?: string;
       imageId?: string | null;
       sortOrder?: number;
+      name?: string | null;
+      description?: string | null;
+      foodCategoryType?: string | null;
+      dietaryCategory?: string | null;
     }
   ): Promise<RestaurantMenu> {
     const restaurantMenu = await prisma.restaurantMenu.create({
@@ -235,9 +287,18 @@ export class RestaurantMenuRepository {
         imageUrl: data.imageUrl,
         imageId: data.imageId,
         sortOrder: data.sortOrder,
+        name: data.name,
+        description: data.description,
+        foodCategoryType: data.foodCategoryType as any,
+        dietaryCategory: data.dietaryCategory as any,
       },
       include: {
-        menuItem: true,
+        menuItem: {
+          include: {
+            image: true,
+          },
+        },
+        image: true,
         restaurant: true,
       },
     });
@@ -264,6 +325,10 @@ export class RestaurantMenuRepository {
       imageUrl: string;
       imageId: string | null;
       sortOrder: number;
+      name?: string | null;
+      description?: string | null;
+      foodCategoryType?: string | null;
+      dietaryCategory?: string | null;
     }>
   ): Promise<RestaurantMenu> {
     const restaurantMenu = await prisma.restaurantMenu.update({
@@ -281,9 +346,18 @@ export class RestaurantMenuRepository {
         imageUrl: data.imageUrl,
         imageId: data.imageId,
         sortOrder: data.sortOrder,
+        name: data.name,
+        description: data.description,
+        foodCategoryType: data.foodCategoryType as any,
+        dietaryCategory: data.dietaryCategory as any,
       },
       include: {
-        menuItem: true,
+        menuItem: {
+          include: {
+            image: true,
+          },
+        },
+        image: true,
         restaurant: true,
       },
     });

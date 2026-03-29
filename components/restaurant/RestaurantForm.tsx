@@ -24,9 +24,10 @@ interface RestaurantFormProps {
     logoId?: string;
     menuImageId?: string;
   };
-  onSubmit: (data: RestaurantFormData) => void;
+  onSubmit: (data: RestaurantFormData & { featureIds?: string[] }) => void;
   loading?: boolean;
-  restaurantId?: string; // Only for edit mode to show features
+  restaurantId?: string;
+  initialFeatureIds?: string[];
 }
 
 export function RestaurantForm({
@@ -35,6 +36,7 @@ export function RestaurantForm({
   onSubmit,
   loading = false,
   restaurantId,
+  initialFeatureIds,
 }: RestaurantFormProps) {
   const [formData, setFormData] = useState<RestaurantFormData>({
     name: initialData?.name || "",
@@ -47,7 +49,7 @@ export function RestaurantForm({
     },
   });
 
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(initialFeatureIds || []);
   
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
@@ -62,14 +64,10 @@ export function RestaurantForm({
   useEffect(() => {
     if (initialData?.logoUrl) {
       setLogoPreview(initialData.logoUrl);
-    } else if (initialData?.logoId) {
-      setLogoPreview(`/api/files/${initialData.logoId}`);
     }
 
     if (initialData?.menuImageUrl) {
       setMenuImagePreview(initialData.menuImageUrl);
-    } else if (initialData?.menuImageId) {
-      setMenuImagePreview(`/api/files/${initialData.menuImageId}`);
     }
   }, [initialData]);
 
@@ -163,12 +161,13 @@ export function RestaurantForm({
       return;
     }
 
-    const submitData: RestaurantFormData = {
+    const submitData = {
       ...formData,
       logo: logoFile || undefined,
       menuImage: menuImageFile || undefined,
       removeLogo,
       removeMenuImage,
+      featureIds: selectedFeatures,
     };
 
     onSubmit(submitData);
@@ -289,20 +288,19 @@ export function RestaurantForm({
           </div>
         </div>
 
-        {/* Dynamic Features - Only in Edit Mode */}
-        {restaurantId && (
-          <div className="pt-4 border-t border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-4">
-              Restaurant Features
-            </label>
-            <RestaurantFeatures
-              restaurantId={restaurantId}
-              selectedFeatures={selectedFeatures}
-              onFeaturesChange={setSelectedFeatures}
-              disabled={loading}
-            />
-          </div>
-        )}
+        {/* Restaurant Features (always shown, save button hidden -- unified save) */}
+        <div className="pt-4 border-t border-gray-200">
+          <label className="block text-sm font-medium text-gray-700 mb-4">
+            Restaurant Features
+          </label>
+          <RestaurantFeatures
+            restaurantId={restaurantId || "temp"}
+            selectedFeatures={selectedFeatures}
+            onFeaturesChange={setSelectedFeatures}
+            disabled={loading}
+            showSaveButton={false}
+          />
+        </div>
 
         <div className="flex justify-end pt-6 border-t border-gray-200">
           <Button type="submit" loading={loading} disabled={loading} size="lg">

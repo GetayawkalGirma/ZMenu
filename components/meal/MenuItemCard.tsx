@@ -30,9 +30,9 @@ export function MenuItemCard({
     <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300 group border-gray-200", className)}>
       {/* Image Section */}
       <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
-        {menuItem.imageId || (menuItem as any).imageUrl ? (
+        {(menuItem as any).imageUrl ? (
           <img
-            src={(menuItem as any).imageUrl || `/api/files/${menuItem.imageId}`}
+            src={(menuItem as any).imageUrl}
             alt={menuItem.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {

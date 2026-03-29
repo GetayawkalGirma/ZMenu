@@ -8,6 +8,7 @@ export interface MenuItem {
   category?: Category;
   tags: string[];
   imageId?: string | null;
+  imageUrl?: string;
 
   // Aggregated analytics
   avgPrice?: number | null;
@@ -24,9 +25,6 @@ export interface Category {
   id: string;
   name: string;
   description?: string | null;
-  foodType: FoodType;
-  categoryType: FoodCategoryType;
-  dietaryCategory: DietaryCategory;
   isActive: boolean;
   sortOrder?: number | null;
   createdAt: Date;
@@ -38,6 +36,8 @@ export interface RestaurantMenu {
   id: string;
   restaurantId: string;
   menuItemId: string;
+  foodCategoryType?: FoodCategoryType | null;
+  dietaryCategory?: DietaryCategory | null;
   price: number;
   portionSize?: PortionSize | null;
   spicyLevel?: number | null;
@@ -49,6 +49,8 @@ export interface RestaurantMenu {
   isRecommended: boolean;
   imageUrl?: string | null;
   imageId?: string | null;
+  name?: string | null;
+  description?: string | null;
   sortOrder?: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -66,14 +68,6 @@ export enum PortionSize {
 export enum DietaryCategory {
   YETSOM = "YETSOM",
   YEFITSIK = "YEFITSIK",
-}
-
-export enum FoodType {
-  BREAKFAST = "BREAKFAST",
-  LUNCH = "LUNCH",
-  SNACK = "SNACK",
-  DINNER = "DINNER",
-  EXTRA = "EXTRA",
 }
 
 export enum FoodCategoryType {
@@ -95,6 +89,12 @@ export interface MenuItemFormData {
 
 // Form data for creating/updating a RestaurantMenu link
 export interface RestaurantMenuFormData {
+  restaurantId: string;
+  menuItemId: string;
+  name?: string;
+  description?: string;
+  foodCategoryType?: FoodCategoryType;
+  dietaryCategory?: DietaryCategory;
   price: number;
   portionSize?: PortionSize;
   spicyLevel?: number;
@@ -107,9 +107,7 @@ export interface RestaurantMenuFormData {
   imageUrl?: string;
   sortOrder?: number;
   image?: File;
-  restaurantId: string;
-  menuItemId: string;
-  removeImage?: boolean; // Removal flag
+  removeImage?: boolean;
 }
 
 // Data format for the unified MealForm (Legacy/Reference)
@@ -128,6 +126,8 @@ export interface MealFormData extends MenuItemFormData {
   sortOrder?: number;
   image?: File;
   restImage?: File; // New for specific restaurant image
+  restName?: string; // Restaurant-specific name
+  restDescription?: string; // Restaurant-specific description
   restaurantId?: string;
   menuItemId?: string;
   removeImage?: boolean;

@@ -2,9 +2,9 @@ export interface Restaurant {
   id: string;
   name: string;
   location: string;
-  logoUrl?: string;
+  logoUrl?: string | null;
   logoId?: string | null;
-  menuImageUrl?: string;
+  menuImageUrl?: string | null;
   menuImageId?: string | null;
   features: RestaurantFeatures;
   createdAt: Date;
