@@ -1,147 +1,165 @@
 import Link from "next/link";
-import { Button, Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
+import { Button, Card, CardHeader, CardContent } from "@/components/ui";
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
+import { MapPin, UtensilsCrossed, TrendingUp, Search } from "lucide-react";
 
 export default async function RestaurantsPage() {
   const result = await RestaurantService.getAllRestaurants();
   const restaurants: any[] = result.success ? result.data || [] : [];
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <h1 className="text-4xl font-black text-gray-900 tracking-tight">
-                Explore <span className="text-blue-600">Restaurants</span>
+    <div className="min-h-screen bg-gray-50/30">
+      {/* Hero Search Section */}
+      <section className="relative bg-white pt-20 pb-32 overflow-hidden border-b border-gray-100">
+        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 -right-24 w-64 h-64 bg-indigo-500 rounded-full blur-[100px]" />
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center md:text-left">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-12">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 border border-blue-100 shadow-sm">
+                <TrendingUp className="w-3 h-3" />
+                <span>Exploring Addis Ababa</span>
+              </div>
+              <h1 className="text-5xl sm:text-7xl font-black text-gray-900 tracking-tighter leading-[0.9]">
+                Find Your <br />
+                Next <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 uppercase">Crave.</span>
               </h1>
-              <p className="mt-2 text-gray-600 font-medium max-w-lg">
-                Discover the best dining spots and explore their detailed menus and exclusive offers.
+              <p className="mt-8 text-lg sm:text-xl text-gray-400 font-medium max-w-xl leading-relaxed">
+                Browse through real-time menus, prices, and locations of top-tier restaurants in the city. No more guessing.
               </p>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
+            
+            <div className="w-full md:w-auto pb-4">
+              <div className="bg-white p-2 rounded-2xl shadow-2xl shadow-blue-100 border border-gray-100 flex items-center group focus-within:ring-4 focus-within:ring-blue-50 transition-all">
+                <div className="pl-4 text-gray-400">
+                  <Search className="w-5 h-5" />
+                </div>
                 <input
                   type="text"
-                  placeholder="Search directory..."
-                  className="pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 transition-all"
+                  placeholder="Restaurant or Cuisine..."
+                  className="pl-3 pr-10 py-4 bg-transparent focus:outline-none w-full md:w-64 font-bold text-gray-900 placeholder:text-gray-300"
                 />
+                <Button size="lg" className="bg-gray-900 hover:bg-black rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg">
+                  Explore
+                </Button>
               </div>
-              <Button size="lg" className="rounded-xl shadow-lg shadow-blue-100">Search</Button>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Restaurants Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Main Grid Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-32">
         {restaurants.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {restaurants.map((restaurant) => (
-              <Card key={restaurant.id} className="group overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl bg-white">
+            {restaurants.map((restaurant) => {
+              const features = restaurant.featureLabels || [];
+              const cats = restaurant.categories || [];
+              
+              return (
+              <Card key={restaurant.id} className="group overflow-hidden border-0 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-2xl hover:shadow-blue-200/40 transition-all duration-500 rounded-3xl bg-white border-b-4 border-b-transparent hover:border-b-blue-600">
                 <CardHeader className="p-0">
-                  <div className="relative h-56 w-full overflow-hidden bg-gray-100">
-                    {restaurant.logoUrl ? (
-                      <img 
-                        src={restaurant.logoUrl} 
-                        alt={restaurant.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                        <span className="text-4xl mb-2">🍽️</span>
-                        <span className="text-xs font-bold uppercase tracking-widest">No Image</span>
-                      </div>
-                    )}
-                    <div className="absolute top-4 right-4 flex flex-col gap-2">
-                      {restaurant.featureLabels?.includes('Luxury') && (
-                        <span className="px-3 py-1 bg-black/80 backdrop-blur-md text-white text-[10px] font-black rounded-full uppercase tracking-tighter shadow-xl">
+                  <div className="relative h-64 w-full overflow-hidden bg-gray-100">
+                    <img 
+                      src={restaurant.logoUrl || "https://placehold.co/600x400?text=No+Photo"} 
+                      alt={restaurant.name} 
+                      className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+                    />
+                    
+                    {/* Floating Badges */}
+                    <div className="absolute top-5 left-5 flex flex-wrap gap-2">
+                       {features.includes('Luxury') && (
+                        <div className="px-4 py-1.5 bg-white/90 backdrop-blur-md text-gray-900 text-[9px] font-black rounded-full uppercase tracking-widest shadow-xl border border-white/40">
                           ✨ Luxury
-                        </span>
-                      )}
-                      {restaurant.status === 'PUBLISHED' && (
-                        <span className="px-3 py-1 bg-green-500 text-white text-[10px] font-black rounded-full uppercase tracking-tighter shadow-xl">
-                          ● Open
-                        </span>
+                        </div>
                       )}
                     </div>
+
+                    <div className="absolute top-5 right-5">
+                      <div className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white/20 hover:scale-110 transition-transform cursor-pointer">
+                        <TrendingUp className="w-4 h-4 text-blue-600" />
+                      </div>
+                    </div>
+                    
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-6">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-black text-gray-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight truncate">
-                      {restaurant.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 font-medium flex items-center mt-1">
-                      <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                      {restaurant.location || "Location not specified"}
-                    </p>
+                <CardContent className="p-8">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase leading-none truncate group-hover:text-blue-600 transition-colors">
+                        {restaurant.name}
+                      </h3>
+                      <div className="flex items-center text-xs text-gray-400 font-bold mt-2 uppercase tracking-tight">
+                        <MapPin className="w-3 h-3 mr-1 text-blue-500 opacity-60" />
+                        {restaurant.location || "Addis Ababa"}
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {restaurant.featureLabels?.slice(0, 3).map((label: string) => (
-                      <span key={label} className="px-2.5 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md uppercase tracking-tight">
-                        {label}
-                      </span>
-                    ))}
-                    {restaurant.categories?.slice(0, 2).map((cat: string) => (
-                      <span key={cat} className="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-md uppercase tracking-tight">
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {cats.slice(0, 2).map((cat: string) => (
+                      <span key={cat} className="px-3 py-1 bg-gray-50 text-gray-500 text-[9px] font-black rounded-lg uppercase tracking-widest border border-gray-100">
                         {cat}
                       </span>
                     ))}
+                    {features.slice(0, 1).map((f: string) => (
+                      <span key={f} className="px-3 py-1 bg-blue-50 text-blue-600 text-[9px] font-black rounded-lg uppercase tracking-widest border border-blue-100">
+                        {f}
+                      </span>
+                    ))}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
-                    <div>
-                      <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Items</span>
-                      <span className="text-lg font-black text-gray-900">{restaurant.mealCount || 0}</span>
+                  <div className="grid grid-cols-2 gap-px bg-gray-100/50 rounded-2xl overflow-hidden mb-8 border border-gray-100">
+                    <div className="bg-white p-4">
+                      <div className="flex items-center text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">
+                        <UtensilsCrossed className="w-2.5 h-2.5 mr-1" /> Items
+                      </div>
+                      <span className="text-xl font-black text-gray-900">{restaurant.mealCount || 0}</span>
                     </div>
-                    <div>
-                      <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Avg Price</span>
-                      <span className="text-lg font-black text-gray-900">
+                    <div className="bg-white p-4">
+                      <span className="block text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">Avg Price</span>
+                      <span className="text-xl font-black text-blue-600">
                         {restaurant.avgPrice > 0 ? `ETB ${Math.round(restaurant.avgPrice)}` : "—"}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
-                    <Link href={`/restaurants/${restaurant.id}`} className="flex-1">
-                      <Button className="w-full h-11 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100">
-                        View Menu
-                      </Button>
-                    </Link>
-                    <Link href={`/restaurants/${restaurant.id}#meals`}>
-                      <Button variant="outline" className="h-11 px-4 rounded-xl border-gray-200 hover:bg-gray-50 font-bold">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
-                      </Button>
-                    </Link>
-                  </div>
+                  <Link href={`/restaurants/${restaurant.id}`} className="block">
+                    <Button className="w-full h-14 rounded-2xl font-black text-xs uppercase tracking-[0.2em] bg-gray-900 hover:bg-blue-600 shadow-xl shadow-gray-100 group-hover:shadow-blue-100 transition-all">
+                      Open Menu
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
         ) : (
-          <div className="text-center py-32 bg-white rounded-3xl border border-dashed border-gray-200">
-            <div className="text-6xl mb-6 grayscale opacity-20">🏙️</div>
-            <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">No Restaurants Found</h3>
-            <p className="text-gray-500 font-medium">We couldn't find any restaurants in the directory at the moment.</p>
-            <Link href="/admin/restaurant-management/new" className="mt-8 inline-block">
-              <Button variant="outline" className="rounded-xl px-8 h-12 font-black uppercase tracking-tight">Add Your First Restaurant</Button>
-            </Link>
+          <div className="text-center py-40 bg-white rounded-[40px] shadow-2xl shadow-gray-100 border border-gray-50 overflow-hidden relative group">
+            <div className="relative z-10">
+              <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform duration-700">
+                <UtensilsCrossed className="w-10 h-10 text-gray-200" />
+              </div>
+              <h3 className="text-3xl font-black text-gray-900 mb-4 uppercase tracking-tighter">Directory is quiet...</h3>
+              <p className="text-gray-400 font-medium text-lg max-w-sm mx-auto leading-relaxed">
+                Be the pioneer. Add the first restaurant and start the culinary movement.
+              </p>
+              <Link href="/admin/restaurant-management/new" className="mt-12 inline-block">
+                <Button className="rounded-2xl px-12 h-16 font-black uppercase tracking-widest text-xs bg-blue-600 shadow-2xl shadow-blue-200 hover:bg-black transition-all">
+                  Initialize Directory
+                </Button>
+              </Link>
+            </div>
+            {/* Aesthetic background blobs */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl -mr-32 -mt-32" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -ml-32 -mb-32" />
           </div>
         )}
-
-        {/* Load More */}
-        {restaurants.length > 0 && (
-          <div className="text-center mt-16">
-            <Button variant="outline" size="lg" className="rounded-xl px-12 h-14 font-black border-2 border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-600 transition-all uppercase tracking-widest text-xs">
-              View All Directory Listings
-            </Button>
-          </div>
-        )}
-      </div>
+      </section>
     </div>
   );
 }
