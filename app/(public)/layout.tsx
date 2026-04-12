@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui";
+import { Store, ChefHat, Pizza } from "lucide-react";
 
 export default function PublicLayout({
   children,
@@ -15,34 +16,52 @@ export default function PublicLayout({
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2 group">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
-                <span className="text-white font-black text-xl tracking-tighter">Z</span>
+                <span className="text-white font-black text-xl tracking-tighter">
+                  Z
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-black text-gray-900 leading-none">Menu</span>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Directory</span>
+                <span className="text-xl font-black text-gray-900 leading-none">
+                  Menu
+                </span>
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">
+                  Directory
+                </span>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden md:flex items-center space-x-2">
               <Link
                 href="/restaurants"
-                className="text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-colors rounded-lg hover:bg-gray-50"
+                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-all rounded-xl hover:bg-gray-50 active:scale-95"
               >
-                Restaurants
+                <Store className="w-4 h-4" />
+                <span>Restaurants</span>
               </Link>
               <Link
                 href="/search"
-                className="text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-colors rounded-lg hover:bg-gray-50"
+                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-all rounded-xl hover:bg-gray-50 active:scale-95"
               >
-                Search Meals
+                <ChefHat className="w-4 h-4" />
+                <span>Search Meals</span>
+              </Link>
+              <Link
+                href="/Food"
+                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-all rounded-xl hover:bg-gray-50 active:scale-95"
+              >
+                <Pizza className="w-4 h-4" />
+                <span>Foods</span>
               </Link>
             </nav>
 
             {/* Premium Action Button */}
             <div className="flex items-center space-x-4">
               <Link href="/admin">
-                <Button variant="ghost" className="text-gray-400 hover:text-gray-900 font-bold text-xs uppercase tracking-widest px-4 h-10">
+                <Button
+                  variant="ghost"
+                  className="text-gray-400 hover:text-gray-900 font-bold text-xs uppercase tracking-widest px-4 h-10"
+                >
                   Admin <span className="hidden sm:inline ml-1">Portal</span>
                 </Button>
               </Link>
@@ -67,17 +86,25 @@ export default function PublicLayout({
             <div className="col-span-1 md:col-span-2 space-y-6">
               <Link href="/" className="flex items-center space-x-2 group">
                 <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-black text-xl tracking-tighter">Z</span>
+                  <span className="text-white font-black text-xl tracking-tighter">
+                    Z
+                  </span>
                 </div>
-                <span className="text-2xl font-black text-gray-900 tracking-tighter">ZMenu</span>
+                <span className="text-2xl font-black text-gray-900 tracking-tighter">
+                  ZMenu
+                </span>
               </Link>
               <p className="text-gray-500 text-lg font-medium leading-relaxed max-w-sm">
-                The ultimate visual directory for Ethiopia&apos;s culinary landscape. Discover real menus and real prices.
+                The ultimate visual directory for Ethiopia&apos;s culinary
+                landscape. Discover real menus and real prices.
               </p>
               <div className="flex space-x-4">
                 {/* Social Placeholders */}
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:border-blue-100 cursor-pointer transition-all">
+                  <div
+                    key={i}
+                    className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:border-blue-100 cursor-pointer transition-all"
+                  >
                     <div className="w-4 h-4 bg-current rounded-sm" />
                   </div>
                 ))}
@@ -91,17 +118,25 @@ export default function PublicLayout({
               </h3>
               <ul className="space-y-4">
                 <li>
-                  <Link href="/restaurants" className="text-gray-600 hover:text-blue-600 font-bold transition-colors">
+                  <Link
+                    href="/restaurants"
+                    className="text-gray-600 hover:text-blue-600 font-bold transition-colors"
+                  >
                     All Restaurants
                   </Link>
                 </li>
                 <li>
-                  <Link href="/search" className="text-gray-600 hover:text-blue-600 font-bold transition-colors">
+                  <Link
+                    href="/search"
+                    className="text-gray-600 hover:text-blue-600 font-bold transition-colors"
+                  >
                     Meal Search
                   </Link>
                 </li>
                 <li>
-                   <span className="text-gray-300 font-bold cursor-not-allowed">Top Rated</span>
+                  <span className="text-gray-300 font-bold cursor-not-allowed">
+                    Top Rated
+                  </span>
                 </li>
               </ul>
             </div>
@@ -113,12 +148,18 @@ export default function PublicLayout({
               </h3>
               <ul className="space-y-4">
                 <li>
-                  <Link href="/admin" className="text-gray-600 hover:text-blue-600 font-bold transition-colors">
+                  <Link
+                    href="/admin"
+                    className="text-gray-600 hover:text-blue-600 font-bold transition-colors"
+                  >
                     Merchant Portal
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-gray-600 hover:text-blue-600 font-bold transition-colors">
+                  <Link
+                    href="/privacy"
+                    className="text-gray-600 hover:text-blue-600 font-bold transition-colors"
+                  >
                     Privacy Policy
                   </Link>
                 </li>
@@ -132,10 +173,10 @@ export default function PublicLayout({
               © 2026 ZMenu — Real Food. Real Prices.
             </p>
             <div className="flex items-center space-x-8">
-               <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center">
-                 <div className="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-sm animate-pulse" />
-                 System Operational
-               </span>
+              <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center">
+                <div className="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-sm animate-pulse" />
+                System Operational
+              </span>
             </div>
           </div>
         </div>

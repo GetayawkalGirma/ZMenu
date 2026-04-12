@@ -10,6 +10,12 @@ import {
   Flame,
   Leaf,
   Beef,
+  Users,
+  Coins,
+  PlusCircle,
+  Tag,
+  MapPin,
+  Compass
 } from "lucide-react";
 import {
   Button,
@@ -20,6 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
   Badge,
+  Label,
+  Checkbox,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -32,11 +40,46 @@ const MEAL_TYPES = [
   "Drinks",
 ];
 
-export function RestaurantMenuFilters() {
+const CATEGORIES = [
+  "Ethiopian",
+  "Fast Food",
+  "Italian",
+  "Seafood",
+  "Indian",
+  "Breakfast",
+  "Desserts",
+  "Drinks",
+];
+
+const PORTIONS = [
+  { id: "ONE_PERSON", label: "Single" },
+  { id: "TWO_PEOPLE", label: "Couple" },
+  { id: "THREE_PEOPLE", label: "Group" },
+  { id: "FAMILY", label: "Family" },
+];
+
+export function RestaurantMenuFilters({ isGlobal = false }: { isGlobal?: boolean }) {
   const [dietary, setDietary] = useState<"all" | "fasting" | "meat">("all");
+  const [nearMe, setNearMe] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("recommended");
   const [search, setSearch] = useState("");
+  const [spicyLevel, setSpicyLevel] = useState<number | null>(null);
+  const [selectedPortions, setSelectedPortions] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+    );
+  };
+
+  const togglePortion = (id: string) => {
+    setSelectedPortions((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  };
 
   const toggleType = (type: string) => {
     setSelectedTypes((prev) =>
@@ -46,15 +89,45 @@ export function RestaurantMenuFilters() {
 
   const FilterContent = () => (
     <div className="space-y-8">
-      {/* Search Input */}
-      <div className="relative group">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-        <Input
-          placeholder="Search this menu..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-12 h-14 bg-gray-50 border-gray-100 rounded-2xl focus:ring-blue-600 transition-all text-sm font-medium"
-        />
+      {/* Search & Location Hub */}
+      <div className="space-y-4">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+          <Input
+            placeholder="Search this menu..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-12 h-14 bg-gray-50 border-gray-100 rounded-2xl focus:ring-blue-600 transition-all text-sm font-medium"
+          />
+        </div>
+
+        {isGlobal && (
+          <label className={cn(
+            "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group",
+            nearMe ? "bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-100" : "bg-white border-gray-100 hover:border-gray-200"
+          )}>
+            <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                  nearMe ? "bg-white/20" : "bg-indigo-50"
+                )}>
+                  <MapPin className={cn("w-4 h-4", nearMe ? "text-white" : "text-indigo-600")} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Near Me</span>
+                  <span className={cn("text-[8px] font-bold uppercase tracking-tight mt-1", nearMe ? "text-indigo-100" : "text-gray-400")}>Show closest results</span>
+                </div>
+            </div>
+            <Checkbox 
+              checked={nearMe} 
+              onCheckedChange={(val) => setNearMe(!!val)}
+              className={cn(
+                "border-2",
+                nearMe ? "border-white data-[state=checked]:bg-white data-[state=checked]:text-indigo-600" : "border-gray-200"
+              )}
+            />
+          </label>
+        )}
       </div>
 
       {/* Triple State Fasting Switch */}
@@ -136,8 +209,138 @@ export function RestaurantMenuFilters() {
         </div>
       </div>
 
-      {/* Sort Section */}
+      {/* Meal Kinds Checklist (Copied from RestaurantFilters) */}
+      <div className="space-y-4 pt-4 border-t border-gray-50">
+        <div className="flex justify-between items-center px-1">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+            Meal Kinds
+          </Label>
+          {selectedCategories.length > 0 && (
+            <button
+              onClick={() => setSelectedCategories([])}
+              className="text-[9px] font-black text-blue-600 uppercase hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+          {CATEGORIES.map((cat) => (
+            <label
+              key={cat}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group",
+                selectedCategories.includes(cat)
+                  ? "bg-blue-50/50 border-blue-200"
+                  : "bg-white border-gray-100 hover:border-gray-200",
+              )}
+            >
+              <Checkbox
+                checked={selectedCategories.includes(cat)}
+                onCheckedChange={() => toggleCategory(cat)}
+                className="rounded-md border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+              />
+              <span
+                className={cn(
+                  "text-sm font-bold transition-colors",
+                  selectedCategories.includes(cat)
+                    ? "text-blue-700"
+                    : "text-gray-600 group-hover:text-gray-900",
+                )}
+              >
+                {cat}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Budget Range */}
       <div className="space-y-3">
+        <div className="flex justify-between items-center px-1">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Budget (ETB)</Label>
+          <Coins className="w-3.5 h-3.5 text-gray-300" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">MIN</span>
+            <Input
+              type="number"
+              placeholder="0"
+              value={priceRange.min}
+              onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
+              className="pl-12 h-12 rounded-xl border-gray-100 bg-gray-50 text-xs font-black"
+            />
+          </div>
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">MAX</span>
+            <Input
+              type="number"
+              placeholder="5000"
+              value={priceRange.max}
+              onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
+              className="pl-12 h-12 rounded-xl border-gray-100 bg-gray-50 text-xs font-black"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Spiciness Level */}
+      <div className="space-y-4">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Heat Tolerance</Label>
+        <div className="flex justify-between p-2 bg-orange-50/50 rounded-2xl border border-orange-100">
+          {[0, 1, 2, 3, 4, 5].map((level) => (
+            <button
+              key={level}
+              onClick={() => setSpicyLevel(level === spicyLevel ? null : level)}
+              className={cn(
+                "w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all",
+                spicyLevel === level
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-200 -translate-y-1"
+                  : "bg-white/80 text-orange-400 hover:bg-white hover:text-orange-600",
+              )}
+            >
+              <Flame
+                className={cn(
+                  "w-4 h-4 mb-0.5",
+                  spicyLevel !== null && level <= spicyLevel
+                    ? "fill-current"
+                    : "opacity-40",
+                )}
+              />
+              <span className="text-[9px] font-black leading-none">
+                {level}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Party Size */}
+      <div className="space-y-4">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5" /> Party Size
+        </Label>
+        <div className="grid grid-cols-2 gap-2">
+          {PORTIONS.map((portion) => (
+            <button
+              key={portion.id}
+              onClick={() => togglePortion(portion.id)}
+              className={cn(
+                "h-11 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center",
+                selectedPortions.includes(portion.id)
+                  ? "bg-gray-900 text-white border-gray-900 shadow-xl -translate-y-0.5"
+                  : "bg-white text-gray-500 border-gray-100 hover:border-gray-300",
+              )}
+            >
+              {portion.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sort Section */}
+      <div className="space-y-3 pt-4 border-t border-gray-50">
         <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sort Menu</Label>
         <div className="space-y-2">
           {[
@@ -209,8 +412,4 @@ export function RestaurantMenuFilters() {
       </div>
     </>
   );
-}
-
-function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("block", className)}>{children}</div>;
 }

@@ -183,33 +183,54 @@ export function RestaurantFilters() {
         </div>
       </div>
 
-      {/* Features Icons */}
-      <div className="space-y-4">
-        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-          Atmosphere & Features
-        </Label>
-        <div className="grid grid-cols-2 gap-3">
+      {/* Atmosphere & Features Checklist */}
+      <div className="space-y-4 pt-4 border-t border-gray-50">
+        <div className="flex justify-between items-center px-1">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+            Atmosphere & Features
+          </Label>
+          {selectedFeatures.length > 0 && (
+            <button
+              onClick={() => setSelectedFeatures([])}
+              className="text-[9px] font-black text-indigo-600 uppercase hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
           {FEATURES.map((feat) => {
             const Icon = feat.icon;
             const active = selectedFeatures.includes(feat.id);
             return (
-              <button
+              <label
                 key={feat.id}
-                onClick={() => toggleFeature(feat.id)}
                 className={cn(
-                  "flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left",
+                  "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group",
                   active
-                    ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm"
-                    : "bg-white border-gray-100 text-gray-400 hover:border-gray-200 hover:text-gray-600",
+                    ? "bg-indigo-50/50 border-indigo-200"
+                    : "bg-white border-gray-100 hover:border-gray-200",
                 )}
               >
-                <Icon
-                  className={cn("w-4 h-4", active && "animate-in zoom-in-50")}
+                <Checkbox
+                  checked={active}
+                  onCheckedChange={() => toggleFeature(feat.id)}
+                  className="rounded-md border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                 />
-                <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-                  {feat.label}
-                </span>
-              </button>
+                <div className="flex items-center gap-2">
+                   <Icon className={cn("w-3.5 h-3.5", active ? "text-indigo-600" : "text-gray-400")} />
+                   <span
+                     className={cn(
+                       "text-sm font-bold transition-colors",
+                       active
+                         ? "text-indigo-700"
+                         : "text-gray-600 group-hover:text-gray-900",
+                     )}
+                   >
+                     {feat.label}
+                   </span>
+                </div>
+              </label>
             );
           })}
         </div>

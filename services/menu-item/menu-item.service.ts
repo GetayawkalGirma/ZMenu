@@ -517,4 +517,29 @@ export class RestaurantMenuService {
       throw new Error("Failed to fetch restaurants for menu item");
     }
   }
+
+  // Get all restaurant menu items globally
+  static async getAllRestaurantMenus(): Promise<RestaurantMenu[]> {
+    try {
+      const items = await RestaurantMenuRepository.getAll();
+
+      items.forEach((rm) => {
+        if ((rm as any).image) {
+          (rm as any).imageUrl = fileService.getPublicUrl(
+            (rm as any).image.path,
+          );
+        }
+        if ((rm as any).menuItem?.image) {
+          (rm as any).menuItem.imageUrl = fileService.getPublicUrl(
+            (rm as any).menuItem.image.path,
+          );
+        }
+      });
+
+      return items;
+    } catch (error) {
+      console.error("Failed to get all restaurant menus:", error);
+      throw new Error("Failed to fetch global restaurant menu list");
+    }
+  }
 }

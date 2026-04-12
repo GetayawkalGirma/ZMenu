@@ -449,6 +449,27 @@ export class RestaurantMenuRepository {
 
     return restaurantMenu as unknown as RestaurantMenu[];
   }
+
+  // Get all restaurant menu items globally
+  static async getAll(): Promise<RestaurantMenu[]> {
+    const items = await prisma.restaurantMenu.findMany({
+      include: {
+        menuItem: {
+          include: {
+            category: true,
+            image: true,
+          },
+        },
+        image: true,
+        restaurant: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return items as unknown as RestaurantMenu[];
+  }
 }
 
 export class CategoryRepository {
