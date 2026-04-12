@@ -32,6 +32,7 @@ export class MenuItemRepository {
         restaurants: {
           include: {
             restaurant: true,
+            image: true,
           },
         },
       },

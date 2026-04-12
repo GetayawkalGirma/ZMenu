@@ -16,10 +16,18 @@ import {
   ArrowLeft,
   Navigation,
   Utensils,
-  LayoutGrid
+  LayoutGrid,
+  Leaf,
+  GlassWater,
+  IceCream,
+  Beef,
+  Flame,
+  Droplets,
+  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { RestaurantFeaturesView } from "@/components/restaurant/RestaurantFeaturesView";
+import { RestaurantMenuFilters } from "@/components/search/RestaurantMenuFilters";
 import { PortionSize } from "@/lib/types/meal";
 import { formatPrice } from "@/lib/utils";
 
@@ -131,28 +139,58 @@ export default async function PublicRestaurantDetailPage({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {menuItems.length > 0 ? (
                   menuItems.map((rm: any) => (
-                    <Card key={rm.id} className="group overflow-hidden border-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-2xl hover:shadow-blue-100/50 transition-all duration-500 rounded-3xl bg-white flex flex-col h-full border-b-4 border-b-transparent hover:border-b-blue-600">
-                      <div className="relative h-48 sm:h-56 overflow-hidden">
-                         <img 
-                           src={rm.imageUrl || (rm.menuItem?.image ? `/api/files/download/${rm.menuItem.image.path}` : "https://placehold.co/600x400?text=No+Photo")} 
-                           className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" 
-                           alt={rm.name}
-                         />
+                  <Card key={rm.id} className="group overflow-hidden border-0 shadow-sm shadow-gray-200 hover:shadow-xl transition-all duration-300 rounded-3xl bg-white flex flex-col h-full">
+                    <div className="relative h-48 sm:h-56 overflow-hidden">
+                       <img 
+                         src={rm.imageUrl || (rm.menuItem?.image ? `/api/files/download/${rm.menuItem.image.path}` : "https://placehold.co/600x400?text=No+Photo")} 
+                         className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-700" 
+                         alt={rm.name}
+                       />
                          <div className="absolute top-4 right-4 h-10 px-4 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl font-black text-blue-600 text-sm tracking-tighter border border-white/40">
                             {formatPrice(rm.price)}
                          </div>
                       </div>
                       <div className="p-8 flex flex-col flex-1">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter mb-2 group-hover:text-blue-600 transition-colors leading-tight">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between mb-2">
+                             <div className="flex items-center gap-2">
+                                {(() => {
+                                   const cat = (rm.menuItem?.category?.name || "").toLowerCase();
+                                   if (cat.includes('drink')) return <GlassWater className="w-3.5 h-3.5 text-blue-500" />;
+                                   if (cat.includes('dessert') || cat.includes('sweet')) return <IceCream className="w-3.5 h-3.5 text-pink-500" />;
+                                   return <Utensils className="w-3.5 h-3.5 text-gray-400" />;
+                                })()}
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">
+                                   {rm.menuItem?.category?.name || "Premium Dish"}
+                                </span>
+                             </div>
+                             {rm.dietaryCategory === "YETSOM" ? (
+                                <Badge className="bg-emerald-50 text-emerald-600 border-none rounded-lg px-2 py-0.5 text-[8px] font-black uppercase flex items-center gap-1">
+                                   <Leaf className="w-2.5 h-2.5" /> Fasting
+                                </Badge>
+                             ) : (
+                                <Badge className="bg-red-50 text-red-500 border-none rounded-lg px-2 py-0.5 text-[8px] font-black uppercase flex items-center gap-1">
+                                   <Beef className="w-2.5 h-2.5 text-red-500" /> Meat
+                                </Badge>
+                             )}
+                          </div>
+
+                          <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter group-hover:text-blue-600 transition-colors leading-tight">
                             {rm.name}
                           </h3>
-                          <p className="text-sm text-gray-400 font-medium line-clamp-2 leading-relaxed h-10">
+                          <p className="text-xs text-gray-400 font-medium line-clamp-2 leading-relaxed">
                             {rm.description || "The finest selection from their culinary team."}
                           </p>
+
+                          {(rm.menuItem?.spicyLevel > 0 || rm.spicyLevel > 0) && (
+                            <div className="flex items-center text-orange-600 text-[10px] font-bold uppercase tracking-tight">
+                               <Flame className="w-3.5 h-3.5 mr-1 text-orange-500" />
+                               Spicy Level {rm.menuItem?.spicyLevel || rm.spicyLevel}
+                            </div>
+                          )}
                         </div>
                         
-                        <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+                        <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                            <div className="flex items-center space-x-4">
                               <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center">
                                  <Clock className="w-3 h-3 mr-1" /> 25m
@@ -163,7 +201,8 @@ export default async function PublicRestaurantDetailPage({
                            </div>
                            <Link href={`/meals/${rm.menuItem?.id || rm.id}`}>
                               <Button variant="ghost" className="h-10 px-0 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-transparent hover:text-gray-900 group-hover:translate-x-1 transition-all">
-                                 Meal Insight
+                                 Info
+                                 <ChevronRight className="w-3 h-3 ml-1" />
                               </Button>
                            </Link>
                         </div>
@@ -200,6 +239,9 @@ export default async function PublicRestaurantDetailPage({
           {/* Premium Sidebar Info */}
           <div className="lg:col-span-4 space-y-12">
             
+            {/* Live Menu Filters */}
+            <RestaurantMenuFilters />
+
             {/* Aesthetic Identity Card */}
             <div className="bg-gray-900 rounded-[3rem] p-10 text-white shadow-2xl shadow-blue-200/40 relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full blur-[80px] -mr-32 -mt-32 group-hover:bg-blue-600/30 transition-all duration-700" />

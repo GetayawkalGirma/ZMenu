@@ -60,7 +60,7 @@ export default async function RestaurantsPage() {
           
           <div className="flex-1">
             {restaurants.length > 0 ? (
-              <div className="grid grid-cols-1 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {restaurants.map((restaurant) => (
                   <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                 ))}

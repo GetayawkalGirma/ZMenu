@@ -131,6 +131,7 @@ export class RestaurantRepository {
             menuItem: {
               include: {
                 image: true,
+                category: true,
               },
             },
             image: true, // restaurant-specific image override
