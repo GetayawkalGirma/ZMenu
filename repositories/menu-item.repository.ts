@@ -32,6 +32,7 @@ export class MenuItemRepository {
         restaurants: {
           include: {
             restaurant: true,
+            image: true,
           },
         },
       },
@@ -41,15 +42,13 @@ export class MenuItemRepository {
   }
 
   // Create menu item (Global Abstract Food)
-  static async create(
-    data: {
-      name: string;
-      description?: string;
-      categoryId: string;
-      tags?: string[];
-      imageId?: string | null;
-    }
-  ): Promise<MenuItem> {
+  static async create(data: {
+    name: string;
+    description?: string;
+    categoryId: string;
+    tags?: string[];
+    imageId?: string | null;
+  }): Promise<MenuItem> {
     const menuItem = await prisma.menuItem.create({
       data: {
         name: data.name,
@@ -76,7 +75,7 @@ export class MenuItemRepository {
       categoryId: string;
       tags?: string[];
       imageId?: string | null;
-    }>
+    }>,
   ): Promise<MenuItem> {
     const menuItem = await prisma.menuItem.update({
       where: { id },
@@ -189,7 +188,7 @@ export class MenuItemRepository {
   static async updateAnalytics(id: string) {
     const restaurantMenus = await prisma.restaurantMenu.findMany({
       where: { menuItemId: id },
-      select: { price: true }
+      select: { price: true },
     });
 
     if (restaurantMenus.length === 0) {
@@ -199,14 +198,15 @@ export class MenuItemRepository {
           avgPrice: null,
           minPrice: null,
           maxPrice: null,
-          priceCount: 0
-        }
+          priceCount: 0,
+        },
       });
       return;
     }
 
     const prices = restaurantMenus.map((rm: { price: number }) => rm.price);
-    const avgPrice = prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
+    const avgPrice =
+      prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     const priceCount = prices.length;
@@ -217,13 +217,50 @@ export class MenuItemRepository {
         avgPrice,
         minPrice,
         maxPrice,
-        priceCount
-      }
+        priceCount,
+      },
     });
   }
 }
 
 export class RestaurantMenuRepository {
+  static async findRestaurantVariantByName(params: {
+    restaurantId: string;
+    menuItemId: string;
+    variantName: string;
+    excludeRestaurantMenuId?: string;
+  }): Promise<RestaurantMenu | null> {
+    const normalizedName = params.variantName.trim();
+    if (!normalizedName) {
+      return null;
+    }
+
+    const restaurantMenu = await prisma.restaurantMenu.findFirst({
+      where: {
+        restaurantId: params.restaurantId,
+        menuItemId: params.menuItemId,
+        name: {
+          equals: normalizedName,
+          mode: "insensitive",
+        },
+        ...(params.excludeRestaurantMenuId
+          ? { NOT: { id: params.excludeRestaurantMenuId } }
+          : {}),
+      },
+      include: {
+        menuItem: {
+          include: {
+            image: true,
+          },
+        },
+        image: true,
+        restaurant: true,
+      },
+    });
+
+    return restaurantMenu as unknown as RestaurantMenu | null;
+  }
+
   // Get all menu items for a restaurant
   static async getRestaurantMenuItems(
     restaurantId: string,
@@ -249,28 +286,26 @@ export class RestaurantMenuRepository {
   }
 
   // Add menu item to restaurant
-  static async addMenuItemToRestaurant(
-    data: {
-      restaurantId: string;
-      menuItemId: string;
-      price: number;
-      portionSize?: PortionSize;
-      spicyLevel?: number;
-      preparationTime?: number;
-      ingredients?: string[];
-      calories?: number;
-      isAvailable?: boolean;
-      isPopular?: boolean;
-      isRecommended?: boolean;
-      imageUrl?: string;
-      imageId?: string | null;
-      sortOrder?: number;
-      name?: string | null;
-      description?: string | null;
-      foodCategoryType?: string | null;
-      dietaryCategory?: string | null;
-    }
-  ): Promise<RestaurantMenu> {
+  static async addMenuItemToRestaurant(data: {
+    restaurantId: string;
+    menuItemId: string;
+    price: number;
+    portionSize?: PortionSize;
+    spicyLevel?: number;
+    preparationTime?: number;
+    ingredients?: string[];
+    calories?: number;
+    isAvailable?: boolean;
+    isPopular?: boolean;
+    isRecommended?: boolean;
+    imageUrl?: string;
+    imageId?: string | null;
+    sortOrder?: number;
+    name?: string | null;
+    description?: string | null;
+    foodCategoryType?: string | null;
+    dietaryCategory?: string | null;
+  }): Promise<RestaurantMenu> {
     const restaurantMenu = await prisma.restaurantMenu.create({
       data: {
         restaurantId: data.restaurantId,
@@ -329,7 +364,7 @@ export class RestaurantMenuRepository {
       description?: string | null;
       foodCategoryType?: string | null;
       dietaryCategory?: string | null;
-    }>
+    }>,
   ): Promise<RestaurantMenu> {
     const restaurantMenu = await prisma.restaurantMenu.update({
       where: { id },
@@ -370,20 +405,22 @@ export class RestaurantMenuRepository {
 
   // Remove menu item from restaurant
   static async removeMenuItemFromRestaurant(
-    restaurantId: string,
-    menuItemId: string,
+    restaurantMenuId: string,
   ): Promise<RestaurantMenu> {
+    const existingRestaurantMenu = await prisma.restaurantMenu.findUnique({
+      where: { id: restaurantMenuId },
+      select: { menuItemId: true },
+    });
+    if (!existingRestaurantMenu) {
+      throw new Error("Restaurant menu item not found");
+    }
+
     const restaurantMenu = await prisma.restaurantMenu.delete({
-      where: {
-        restaurantId_menuItemId: {
-          restaurantId,
-          menuItemId,
-        },
-      },
+      where: { id: restaurantMenuId },
     });
 
     // Update global analytics after change
-    await MenuItemRepository.updateAnalytics(menuItemId);
+    await MenuItemRepository.updateAnalytics(existingRestaurantMenu.menuItemId);
 
     return restaurantMenu as unknown as RestaurantMenu;
   }
@@ -412,6 +449,27 @@ export class RestaurantMenuRepository {
 
     return restaurantMenu as unknown as RestaurantMenu[];
   }
+
+  // Get all restaurant menu items globally
+  static async getAll(): Promise<RestaurantMenu[]> {
+    const items = await prisma.restaurantMenu.findMany({
+      include: {
+        menuItem: {
+          include: {
+            category: true,
+            image: true,
+          },
+        },
+        image: true,
+        restaurant: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return items as unknown as RestaurantMenu[];
+  }
 }
 
 export class CategoryRepository {
@@ -424,6 +482,51 @@ export class CategoryRepository {
 
   static async getById(id: string): Promise<Category | null> {
     const category = await prisma.category.findUnique({
+      where: { id },
+    });
+    return category as unknown as Category;
+  }
+
+  static async create(data: {
+    name: string;
+    description?: string | null;
+    isActive?: boolean;
+    sortOrder?: number;
+  }): Promise<Category> {
+    const category = await prisma.category.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        isActive: data.isActive ?? true,
+        sortOrder: data.sortOrder ?? 0,
+      },
+    });
+    return category as unknown as Category;
+  }
+
+  static async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      description?: string | null;
+      isActive?: boolean;
+      sortOrder?: number;
+    }>,
+  ): Promise<Category> {
+    const category = await prisma.category.update({
+      where: { id },
+      data: {
+        name: data.name,
+        description: data.description,
+        isActive: data.isActive,
+        sortOrder: data.sortOrder,
+      },
+    });
+    return category as unknown as Category;
+  }
+
+  static async delete(id: string): Promise<Category> {
+    const category = await prisma.category.delete({
       where: { id },
     });
     return category as unknown as Category;

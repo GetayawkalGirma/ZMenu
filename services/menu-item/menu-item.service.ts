@@ -32,8 +32,20 @@ export class MenuItemService {
   static async getMenuItemById(id: string): Promise<MenuItem | null> {
     try {
       const item = await MenuItemRepository.getById(id);
-      if (item && (item as any).image) {
-        (item as any).imageUrl = fileService.getPublicUrl((item as any).image.path);
+      if (item) {
+        // Hydrate global image
+        if ((item as any).image) {
+          (item as any).imageUrl = fileService.getPublicUrl((item as any).image.path);
+        }
+        
+        // Hydrate restaurant-specific images
+        if ((item as any).restaurants) {
+          (item as any).restaurants.forEach((rm: any) => {
+            if (rm.image) {
+              rm.imageUrl = fileService.getPublicUrl(rm.image.path);
+            }
+          });
+        }
       }
       return item;
     } catch (error) {
@@ -283,35 +295,22 @@ export class RestaurantMenuService {
         imageId = null;
       }
 
-      // Check if link already exists
-      const existing = await RestaurantMenuRepository.getRestaurantMenuItems(data.restaurantId);
-      const existingLink = existing.find((rm) => rm.menuItemId === data.menuItemId);
+      const globalMenuItem = await MenuItemRepository.getById(data.menuItemId);
+      if (!globalMenuItem) {
+        throw new Error("Selected menu item was not found.");
+      }
+      const variantName = (data.name?.trim() || globalMenuItem.name?.trim() || "").trim();
+      if (!variantName) {
+        throw new Error("Variant name is required.");
+      }
 
-      if (existingLink) {
-        const updated = await RestaurantMenuRepository.updateRestaurantMenuItem(
-          existingLink.id,
-          {
-            price: data.price,
-            portionSize: data.portionSize,
-            spicyLevel: data.spicyLevel,
-            preparationTime: data.preparationTime,
-            ingredients: data.ingredients,
-            calories: data.calories,
-            isAvailable: data.isAvailable,
-            isPopular: data.isPopular,
-            isRecommended: data.isRecommended,
-            sortOrder: data.sortOrder,
-            name: data.name,
-            description: data.description,
-            foodCategoryType: data.foodCategoryType,
-            dietaryCategory: data.dietaryCategory,
-            imageId: imageId === null ? null : (imageId ?? existingLink.imageId ?? undefined),
-          },
-        );
-        if ((updated as any).image) {
-          (updated as any).imageUrl = fileService.getPublicUrl((updated as any).image.path);
-        }
-        return updated;
+      const existingVariant = await RestaurantMenuRepository.findRestaurantVariantByName({
+        restaurantId: data.restaurantId,
+        menuItemId: data.menuItemId,
+        variantName,
+      });
+      if (existingVariant) {
+        throw new Error(`"${variantName}" already exists for this restaurant and base menu item.`);
       }
 
       const rm = await RestaurantMenuRepository.addMenuItemToRestaurant({
@@ -327,7 +326,7 @@ export class RestaurantMenuService {
         isPopular: data.isPopular,
         isRecommended: data.isRecommended,
         sortOrder: data.sortOrder,
-        name: data.name,
+        name: variantName,
         description: data.description,
         foodCategoryType: data.foodCategoryType,
         dietaryCategory: data.dietaryCategory,
@@ -343,7 +342,7 @@ export class RestaurantMenuService {
       return rm;
     } catch (error) {
       console.error("Failed to link menu item to restaurant:", error);
-      throw new Error("Failed to link menu item to restaurant");
+      throw new Error(error instanceof Error ? error.message : "Failed to link menu item to restaurant");
     }
   }
 
@@ -381,69 +380,45 @@ export class RestaurantMenuService {
         imageId = null;
       }
 
-      // 2. Check if this restaurant already has this menu item
-      const existingRestaurantMenu = await RestaurantMenuRepository.getRestaurantMenuItems(restaurantId);
-      const existingLinkIdx = existingRestaurantMenu.findIndex(rm => rm.menuItemId === menuItem.id);
-
-      if (existingLinkIdx > -1) {
-        const existingLink = existingRestaurantMenu[existingLinkIdx];
-        // Update existing restaurant-specific details
-        const updatedRestaurantMenu = await RestaurantMenuRepository.updateRestaurantMenuItem(
-          existingLink.id,
-          {
-            price: data.price,
-            portionSize: data.portionSize,
-            spicyLevel: data.spicyLevel,
-            preparationTime: data.preparationTime,
-            ingredients: data.ingredients,
-            calories: data.calories,
-            isAvailable: data.isAvailable ?? true,
-            isPopular: data.isPopular,
-            isRecommended: data.isRecommended,
-            imageUrl: data.imageUrl,
-            imageId: imageId === null ? null : (imageId ?? existingLink.imageId ?? undefined),
-            sortOrder: data.sortOrder,
-            name: data.restName || data.name,
-            description: data.restDescription || data.description,
-          }
-        );
-
-        if ((updatedRestaurantMenu as any).image) {
-          (updatedRestaurantMenu as any).imageUrl = fileService.getPublicUrl((updatedRestaurantMenu as any).image.path);
-        }
-
-        return {
-          restaurantMenu: updatedRestaurantMenu,
-          menuItem,
-          isNew: false,
-        };
-      } else {
-        // Create new restaurant-specific link
-        const restaurantMenu = await RestaurantMenuRepository.addMenuItemToRestaurant({
-          restaurantId,
-          menuItemId: menuItem.id,
-          price: data.price || 0,
-          portionSize: data.portionSize,
-          spicyLevel: data.spicyLevel,
-          preparationTime: data.preparationTime,
-          ingredients: data.ingredients,
-          calories: data.calories,
-          isAvailable: data.isAvailable,
-          isPopular: data.isPopular,
-          isRecommended: data.isRecommended,
-          imageUrl: data.imageUrl,
-          imageId: imageId || undefined,
-          sortOrder: data.sortOrder,
-          name: data.restName || data.name,
-          description: data.restDescription || data.description,
-        });
-
-        if ((restaurantMenu as any).image) {
-          (restaurantMenu as any).imageUrl = fileService.getPublicUrl((restaurantMenu as any).image.path);
-        }
-
-        return { restaurantMenu, menuItem, isNew };
+      const variantName = (data.restName?.trim() || data.name?.trim() || menuItem.name?.trim() || "").trim();
+      if (!variantName) {
+        throw new Error("Variant name is required.");
       }
+
+      const existingVariant = await RestaurantMenuRepository.findRestaurantVariantByName({
+        restaurantId,
+        menuItemId: menuItem.id,
+        variantName,
+      });
+      if (existingVariant) {
+        throw new Error(`"${variantName}" already exists for this restaurant and base menu item.`);
+      }
+
+      // 2. Create new restaurant-specific link
+      const restaurantMenu = await RestaurantMenuRepository.addMenuItemToRestaurant({
+        restaurantId,
+        menuItemId: menuItem.id,
+        price: data.price || 0,
+        portionSize: data.portionSize,
+        spicyLevel: data.spicyLevel,
+        preparationTime: data.preparationTime,
+        ingredients: data.ingredients,
+        calories: data.calories,
+        isAvailable: data.isAvailable,
+        isPopular: data.isPopular,
+        isRecommended: data.isRecommended,
+        imageUrl: data.imageUrl,
+        imageId: imageId || undefined,
+        sortOrder: data.sortOrder,
+        name: variantName,
+        description: data.restDescription || data.description,
+      });
+
+      if ((restaurantMenu as any).image) {
+        (restaurantMenu as any).imageUrl = fileService.getPublicUrl((restaurantMenu as any).image.path);
+      }
+
+      return { restaurantMenu, menuItem, isNew };
     } catch (error) {
       console.error("Failed to add menu item to restaurant:", error);
       throw new Error("Failed to add menu item to restaurant");
@@ -471,6 +446,10 @@ export class RestaurantMenuService {
 
       // Update restaurant-specific fields
       const updatedItem = await RestaurantMenuRepository.updateRestaurantMenuItem(id, {
+        name: data.restName || data.name,
+        description: data.restDescription || data.description,
+        foodCategoryType: data.foodCategoryType,
+        dietaryCategory: data.dietaryCategory,
         price: data.price,
         portionSize: data.portionSize,
         spicyLevel: data.spicyLevel,
@@ -498,13 +477,11 @@ export class RestaurantMenuService {
 
   // Remove menu item from restaurant
   static async removeMenuItemFromRestaurant(
-    restaurantId: string,
-    menuItemId: string,
+    restaurantMenuId: string,
   ): Promise<RestaurantMenu> {
     try {
       return await RestaurantMenuRepository.removeMenuItemFromRestaurant(
-        restaurantId,
-        menuItemId,
+        restaurantMenuId,
       );
     } catch (error) {
       console.error("Failed to remove menu item from restaurant:", error);
@@ -538,6 +515,31 @@ export class RestaurantMenuService {
     } catch (error) {
       console.error("Failed to get restaurants by menu item:", error);
       throw new Error("Failed to fetch restaurants for menu item");
+    }
+  }
+
+  // Get all restaurant menu items globally
+  static async getAllRestaurantMenus(): Promise<RestaurantMenu[]> {
+    try {
+      const items = await RestaurantMenuRepository.getAll();
+
+      items.forEach((rm) => {
+        if ((rm as any).image) {
+          (rm as any).imageUrl = fileService.getPublicUrl(
+            (rm as any).image.path,
+          );
+        }
+        if ((rm as any).menuItem?.image) {
+          (rm as any).menuItem.imageUrl = fileService.getPublicUrl(
+            (rm as any).menuItem.image.path,
+          );
+        }
+      });
+
+      return items;
+    } catch (error) {
+      console.error("Failed to get all restaurant menus:", error);
+      throw new Error("Failed to fetch global restaurant menu list");
     }
   }
 }

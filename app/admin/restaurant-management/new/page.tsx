@@ -73,12 +73,15 @@ export default function NewRestaurantPage() {
     }
   };
 
-  const handleDeleteMenuItem = async (restaurantMenuId: string, menuItemId: string) => {
+  const handleDeleteMenuItem = async (restaurantMenuId: string) => {
     if (!createdRestaurantId) return;
     if (!confirm("Remove this item from the restaurant?")) return;
 
     const { removeMenuItemFromRestaurant } = await import("../menu-item-actions");
-    const result = await removeMenuItemFromRestaurant(createdRestaurantId, menuItemId);
+    const result = await removeMenuItemFromRestaurant(
+      createdRestaurantId,
+      restaurantMenuId,
+    );
     if (result.success) {
       setMenuItems((prev) => prev.filter((item) => item.id !== restaurantMenuId));
     } else {

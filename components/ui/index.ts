@@ -25,3 +25,5 @@ export {
   DialogDescription,
 } from "./Dialog";
 export { Badge } from "./Badge";
+export { StatusDialog } from "./StatusDialog";
+export type { StatusType } from "./StatusDialog";
