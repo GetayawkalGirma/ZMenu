@@ -1,10 +1,24 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
+  const getActiveClass = (href: string) => {
+    if (!pathname) return "text-gray-600 hover:bg-gray-50 hover:text-gray-900";
+    if (href === "/admin" && pathname === "/admin")
+      return "bg-gray-100 text-gray-900";
+    if (href !== "/admin" && pathname.startsWith(href))
+      return "bg-gray-100 text-gray-900";
+    return "text-gray-600 hover:bg-gray-50 hover:text-gray-900";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Navigation Header - Server Rendered */}
@@ -62,43 +76,43 @@ export default function AdminLayout({
             <div className="space-y-1">
               <Link
                 href="/admin"
-                className="bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                className={`${getActiveClass("/admin")} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
               >
                 Dashboard
               </Link>
               <Link
                 href="/admin/restaurant-management"
-                className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                className={`${getActiveClass("/admin/restaurant-management")} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
               >
                 Restaurants
               </Link>
               <Link
                 href="/admin/meals"
-                className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                className={`${getActiveClass("/admin/meals")} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
               >
                 Meals
               </Link>
-              {/* <Link
+              <Link
                 href="/admin/categories"
-                className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                className={`${getActiveClass("/admin/categories")} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
               >
                 Categories
-              </Link> */}
+              </Link>
               <Link
                 href="/admin/features-management"
-                className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                className={`${getActiveClass("/admin/features-management")} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
               >
                 Features Management
               </Link>
               <Link
                 href="/admin/users"
-                className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                className={`${getActiveClass("/admin/users")} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
               >
                 Users
               </Link>
               <Link
                 href="/admin/settings"
-                className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                className={`${getActiveClass("/admin/settings")} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
               >
                 Settings
               </Link>

@@ -140,11 +140,13 @@ export async function updateRestaurantMenuItem(id: string, data: any) {
 }
 
 // Remove menu item from restaurant
-export async function removeMenuItemFromRestaurant(restaurantId: string, menuItemId: string) {
+export async function removeMenuItemFromRestaurant(
+  restaurantId: string,
+  restaurantMenuId: string,
+) {
   try {
     const restaurantMenuItem = await RestaurantMenuService.removeMenuItemFromRestaurant(
-      restaurantId,
-      menuItemId
+      restaurantMenuId,
     );
     revalidatePath(`/admin/restaurant-management/${restaurantId}/edit`);
     return { success: true, data: restaurantMenuItem };

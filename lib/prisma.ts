@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
 import "dotenv/config";
 
 declare global {
@@ -14,9 +13,8 @@ const getClient = () => {
   if (!connectionString) {
     console.error("DATABASE_URL is not set in environment!");
   }
-  const pool = new Pool({ connectionString });
-  const adapter = new PrismaPg(pool);
-  console.log("Pool created and adapter initialized.");
+  const adapter = new PrismaPg({ connectionString });
+  console.log("Adapter initialized.");
   return new PrismaClient({
     adapter,
     log: ["error"],

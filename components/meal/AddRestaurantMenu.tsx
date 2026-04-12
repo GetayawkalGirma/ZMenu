@@ -12,8 +12,9 @@ interface AddRestaurantMenuProps {
   restaurantId: string;
   existingItems: RestaurantMenu[];
   onAdd: (data: RestaurantMenuFormData) => Promise<void>;
+  onUpdate?: (id: string, data: RestaurantMenuFormData) => Promise<void>;
   onEdit?: (item: RestaurantMenu) => void;
-  onDelete?: (restaurantMenuId: string, menuItemId: string) => void;
+  onDelete?: (restaurantMenuId: string) => void;
   loading?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function AddRestaurantMenu({
   restaurantId,
   existingItems,
   onAdd,
+  onUpdate,
   onEdit,
   onDelete,
   loading = false,
@@ -41,7 +43,11 @@ export function AddRestaurantMenu({
   const handleSubmit = async (data: RestaurantMenuFormData) => {
     setSaving(true);
     try {
-      await onAdd(data);
+      if (editingItem && onUpdate) {
+        await onUpdate(editingItem.id, data);
+      } else {
+        await onAdd(data);
+      }
       setShowForm(false);
       setSelectedMenuItem(null);
       setEditingItem(null);
@@ -154,7 +160,7 @@ export function AddRestaurantMenu({
               onEdit={() => handleEditItem(item)}
               onDelete={
                 onDelete
-                  ? () => onDelete(item.id, item.menuItemId)
+                  ? () => onDelete(item.id)
                   : undefined
               }
             />

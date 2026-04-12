@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getRestaurant, updateRestaurant, deleteRestaurant } from "../../actions";
+import {
+  getRestaurant,
+  updateRestaurant,
+  deleteRestaurant,
+} from "../../actions";
 import {
   linkMenuItemToRestaurant,
+  updateRestaurantMenuItem,
   removeMenuItemFromRestaurant,
   getRestaurantMenu,
 } from "../../menu-item-actions";
@@ -24,6 +29,7 @@ import {
 import type { CreateRestaurantInput } from "@/lib/validations/restaurant.validation";
 import { NoiseLevel, PrivacyLevel } from "@/lib/types/restaurant";
 import type { RestaurantMenu, RestaurantMenuFormData } from "@/lib/types/meal";
+import { StatusDialog, StatusType } from "@/components/ui";
 
 export default function EditRestaurantPage({
   params,
@@ -32,12 +38,21 @@ export default function EditRestaurantPage({
 }) {
   const router = useRouter();
   const [restaurantId, setRestaurantId] = useState<string>("");
-  const [restaurant, setRestaurant] = useState<CreateRestaurantInput | null>(null);
+  const [restaurant, setRestaurant] = useState<CreateRestaurantInput | null>(
+    null,
+  );
   const [menuItems, setMenuItems] = useState<RestaurantMenu[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialFeatureIds, setInitialFeatureIds] = useState<string[]>([]);
+
+  // Status Dialog State
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [statusType, setStatusType] = useState<StatusType>("info");
+  const [statusTitle, setStatusTitle] = useState("");
+  const [statusDescription, setStatusDescription] = useState("");
+  const [statusAction, setStatusAction] = useState<(() => void) | undefined>();
 
   useEffect(() => {
     const loadParams = async () => {
@@ -105,13 +120,22 @@ export default function EditRestaurantPage({
       const result = await updateRestaurant(restaurantId, updateData);
 
       if (result.success) {
-        alert("Restaurant updated successfully!");
-        router.push(`/admin/restaurant-management/${restaurantId}`);
+        setStatusType("success");
+        setStatusTitle("Update Successful");
+        setStatusDescription("The restaurant details have been synchronized with the database.");
+        setStatusAction(() => () => router.push(`/admin/restaurant-management/${restaurantId}`));
+        setStatusOpen(true);
       } else {
-        setError(result.error || "Failed to update restaurant");
+        setStatusType("error");
+        setStatusTitle("Update Failed");
+        setStatusDescription(result.error || "A communication error occurred with the server.");
+        setStatusOpen(true);
       }
-    } catch {
-      setError("Failed to update restaurant");
+    } catch (err: any) {
+      setStatusType("error");
+      setStatusTitle("Critical Error");
+      setStatusDescription(err.message || "Failed to update restaurant due to a network issue.");
+      setStatusOpen(true);
     } finally {
       setSaving(false);
     }
@@ -134,12 +158,36 @@ export default function EditRestaurantPage({
     }
   };
 
-  const handleDeleteMenuItem = async (restaurantMenuId: string, menuItemId: string) => {
+  const handleUpdateMenuItem = async (id: string, data: RestaurantMenuFormData) => {
+    const result = await updateRestaurantMenuItem(id, {
+      ...data,
+      restaurantId,
+    });
+
+    if (result.success) {
+      const menuResult = await getRestaurantMenu(restaurantId);
+      if (menuResult.success && menuResult.data) {
+        setMenuItems(menuResult.data);
+      }
+    } else {
+      alert(`Failed to update menu item: ${result.error}`);
+      throw new Error(result.error);
+    }
+  };
+
+  const handleDeleteMenuItem = async (
+    restaurantMenuId: string,
+  ) => {
     if (!confirm("Remove this item from the restaurant?")) return;
 
-    const result = await removeMenuItemFromRestaurant(restaurantId, menuItemId);
+    const result = await removeMenuItemFromRestaurant(
+      restaurantId,
+      restaurantMenuId,
+    );
     if (result.success) {
-      setMenuItems((prev) => prev.filter((item) => item.id !== restaurantMenuId));
+      setMenuItems((prev) =>
+        prev.filter((item) => item.id !== restaurantMenuId),
+      );
     } else {
       alert(`Failed to remove: ${result.error}`);
     }
@@ -273,9 +321,7 @@ export default function EditRestaurantPage({
               <div className="mt-8 pt-6 border-t border-red-100">
                 <Card className="border-red-200 bg-red-50/30">
                   <CardHeader>
-                    <CardTitle className="text-red-800 flex items-center gap-2">
-                      Danger Zone
-                    </CardTitle>
+                    <CardTitle className="text-red-800 flex items-center gap-2"></CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -308,6 +354,7 @@ export default function EditRestaurantPage({
                 restaurantId={restaurantId}
                 existingItems={menuItems}
                 onAdd={handleAddMenuItem}
+                onUpdate={handleUpdateMenuItem}
                 onDelete={handleDeleteMenuItem}
                 loading={saving}
               />
@@ -315,6 +362,16 @@ export default function EditRestaurantPage({
           </Tabs>
         </div>
       </div>
+
+      <StatusDialog 
+        open={statusOpen}
+        onOpenChange={setStatusOpen}
+        type={statusType}
+        title={statusTitle}
+        description={statusDescription}
+        onAction={statusAction}
+        actionLabel={statusType === "success" ? "View Restaurant" : "Try Again"}
+      />
     </div>
   );
 }
