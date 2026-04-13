@@ -412,6 +412,8 @@ export class RestaurantMenuService {
         sortOrder: data.sortOrder,
         name: variantName,
         description: data.restDescription || data.description,
+        foodCategoryType: data.foodCategoryType,
+        dietaryCategory: data.dietaryCategory,
       });
 
       if ((restaurantMenu as any).image) {

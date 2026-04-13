@@ -1,18 +1,7 @@
-import { PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+import prisma from "../lib/prisma";
 import "dotenv/config";
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const pool = new Pool({ connectionString });
-  const adapter = new PrismaPg(pool);
-  const prisma = new PrismaClient({ adapter });
-
   const categories = [
     { name: "Ethiopian", sortOrder: 1 },
     { name: "Fast Food", sortOrder: 2 },
@@ -45,7 +34,6 @@ async function main() {
 
   console.log("Seeding completed successfully!");
   await prisma.$disconnect();
-  await pool.end();
 }
 
 main().catch(e => {

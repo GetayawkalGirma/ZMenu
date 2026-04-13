@@ -128,6 +128,8 @@ export interface MealFormData extends MenuItemFormData {
   restImage?: File; // New for specific restaurant image
   restName?: string; // Restaurant-specific name
   restDescription?: string; // Restaurant-specific description
+  foodCategoryType?: FoodCategoryType;
+  dietaryCategory?: DietaryCategory;
   restaurantId?: string;
   menuItemId?: string;
   removeImage?: boolean;

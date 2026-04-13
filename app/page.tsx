@@ -100,7 +100,7 @@ export default async function HomePage() {
                   <div className="relative h-[450px] rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl shadow-gray-200 transition-all group-hover:shadow-blue-100 group-hover:border-blue-50">
                     <img 
                       src={restaurant.logoUrl || "https://placehold.co/600x800?text=ZMenu"} 
-                      alt={restaurant.name} 
+                      alt={restaurant.name || "Restaurant"} 
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent" />

@@ -19,6 +19,7 @@ interface TabsTriggerProps {
   className?: string;
   children: React.ReactNode;
   isActive?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }
 
@@ -73,9 +74,15 @@ export function TabsList({
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           const childElement = child as React.ReactElement<any>;
+          const isDisabled = childElement.props.disabled;
+
           return React.cloneElement(childElement, {
             isActive: childElement.props.value === activeTab,
-            onClick: () => setActiveTab?.(childElement.props.value),
+            onClick: () => {
+              if (!isDisabled) {
+                setActiveTab?.(childElement.props.value);
+              }
+            },
           });
         }
         return child;
@@ -89,11 +96,13 @@ export function TabsTrigger({
   className,
   children,
   isActive,
+  disabled,
   onClick,
 }: TabsTriggerProps) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
         isActive
