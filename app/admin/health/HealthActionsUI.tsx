@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { testRawQuery, testFetchRestaurants, testFetchMeals } from "./actions";
+import { 
+  testRawQuery, 
+  testFetchRestaurants, 
+  testFetchMeals, 
+  testCloudStorage 
+} from "./actions";
 import { Play, RotateCcw, Box, Check, X, Loader2 } from "lucide-react";
 
 type LogEntry = {
@@ -13,15 +18,20 @@ type LogEntry = {
 
 export default function HealthActionsUI() {
   const [logs, setLogs] = useState<LogEntry[]>([
-    { id: "1", type: "INFO", message: "Diagnostic console initialized. Ready for user testing.", timestamp: "--:--:--" }
+    {
+      id: "1",
+      type: "INFO",
+      message: "Diagnostic console initialized. Ready for user testing.",
+      timestamp: "--:--:--",
+    },
   ]);
   const [loading, setLoading] = useState(false);
 
   const addLog = (type: LogEntry["type"], message: string) => {
     const time = new Date().toLocaleTimeString();
-    setLogs(prev => [
+    setLogs((prev) => [
       { id: Math.random().toString(36), type, message, timestamp: time },
-      ...prev.slice(0, 19) // Keep last 20 logs
+      ...prev.slice(0, 19), // Keep last 20 logs
     ]);
   };
 
@@ -29,7 +39,7 @@ export default function HealthActionsUI() {
     if (loading) return;
     setLoading(true);
     addLog("INFO", `Starting test: ${testName}...`);
-    
+
     try {
       const result = await testFn();
       if (result.success) {
@@ -45,7 +55,14 @@ export default function HealthActionsUI() {
   };
 
   const clearLogs = () => {
-    setLogs([{ id: "init", type: "INFO", message: "Console cleared.", timestamp: new Date().toLocaleTimeString() }]);
+    setLogs([
+      {
+        id: "init",
+        type: "INFO",
+        message: "Console cleared.",
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
   };
 
   return (
@@ -54,17 +71,29 @@ export default function HealthActionsUI() {
         <div className="space-y-4">
           {logs.map((log) => (
             <div key={log.id} className="flex gap-4 items-start group">
-              <span className="text-[10px] font-mono text-gray-400 mt-1 whitespace-nowrap">{log.timestamp}</span>
+              <span className="text-[10px] font-mono text-gray-400 mt-1 whitespace-nowrap">
+                {log.timestamp}
+              </span>
               <div className="flex gap-2 items-start">
-                {log.type === "SUCCESS" && <Check className="w-4 h-4 text-emerald-500 mt-0.5" />}
-                {log.type === "ERROR" && <X className="w-4 h-4 text-red-500 mt-0.5" />}
-                {log.type === "INFO" && <Box className="w-4 h-4 text-blue-500 mt-0.5" />}
-                
-                <p className={`text-xs font-mono leading-relaxed break-all ${
-                  log.type === "SUCCESS" ? "text-emerald-700" :
-                  log.type === "ERROR" ? "text-red-700 font-bold" :
-                  "text-gray-600"
-                }`}>
+                {log.type === "SUCCESS" && (
+                  <Check className="w-4 h-4 text-emerald-500 mt-0.5" />
+                )}
+                {log.type === "ERROR" && (
+                  <X className="w-4 h-4 text-red-500 mt-0.5" />
+                )}
+                {log.type === "INFO" && (
+                  <Box className="w-4 h-4 text-blue-500 mt-0.5" />
+                )}
+
+                <p
+                  className={`text-xs font-mono leading-relaxed break-all ${
+                    log.type === "SUCCESS"
+                      ? "text-emerald-700"
+                      : log.type === "ERROR"
+                        ? "text-red-700 font-bold"
+                        : "text-gray-600"
+                  }`}
+                >
                   {log.message}
                 </p>
               </div>
@@ -79,7 +108,11 @@ export default function HealthActionsUI() {
           disabled={loading}
           className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-200"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Play className="w-4 h-4" />
+          )}
           Run Raw Query
         </button>
 
@@ -88,8 +121,8 @@ export default function HealthActionsUI() {
           disabled={loading}
           className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all"
         >
-           <Database className="w-4 h-4" />
-           Table Status (Res)
+          <Database className="w-4 h-4" />
+          Table Status (Res)
         </button>
 
         <button
@@ -97,16 +130,25 @@ export default function HealthActionsUI() {
           disabled={loading}
           className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all"
         >
-           <Database className="w-4 h-4" />
-           Table Status (Meal)
+          <Database className="w-4 h-4" />
+          Table Status (Meal)
+        </button>
+
+        <button
+          onClick={() => runTest("Cloud Storage", testCloudStorage)}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-200"
+        >
+          <Box className="w-4 h-4" />
+          Test Cloud Storage
         </button>
 
         <button
           onClick={clearLogs}
           className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
         >
-           <RotateCcw className="w-4 h-4" />
-           Clear
+          <RotateCcw className="w-4 h-4" />
+          Clear
         </button>
       </div>
     </>
@@ -116,6 +158,21 @@ export default function HealthActionsUI() {
 // Inline Lucide icon for UI consistency
 function Database({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
-  )
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <ellipse cx="12" cy="5" rx="9" ry="3" />
+      <path d="M3 5V19A9 3 0 0 0 21 19V5" />
+      <path d="M3 12A9 3 0 0 0 21 12" />
+    </svg>
+  );
 }
