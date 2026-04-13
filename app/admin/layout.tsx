@@ -116,6 +116,12 @@ export default function AdminLayout({
               >
                 Settings
               </Link>
+              <Link
+                href="/admin/health"
+                className={`${getActiveClass("/admin/health")} group flex items-center px-2 py-2 text-sm font-medium rounded-md font-bold text-blue-600`}
+              >
+                System Health
+              </Link>
             </div>
           </nav>
         </aside>
