@@ -13,13 +13,14 @@ type LogEntry = {
 
 export default function HealthActionsUI() {
   const [logs, setLogs] = useState<LogEntry[]>([
-    { id: "1", type: "INFO", message: "Diagnostic console initialized. Ready for user testing.", timestamp: new Date().toLocaleTimeString() }
+    { id: "1", type: "INFO", message: "Diagnostic console initialized. Ready for user testing.", timestamp: "--:--:--" }
   ]);
   const [loading, setLoading] = useState(false);
 
   const addLog = (type: LogEntry["type"], message: string) => {
+    const time = new Date().toLocaleTimeString();
     setLogs(prev => [
-      { id: Math.random().toString(36), type, message, timestamp: new Date().toLocaleTimeString() },
+      { id: Math.random().toString(36), type, message, timestamp: time },
       ...prev.slice(0, 19) // Keep last 20 logs
     ]);
   };

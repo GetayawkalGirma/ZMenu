@@ -9,25 +9,47 @@ declare global {
 }
 
 const getClient = () => {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
+  const rawConnectionString = process.env.DATABASE_URL;
+  if (!rawConnectionString) {
     throw new Error("DATABASE_URL is not set in environment!");
   }
 
-  const pool = new pg.Pool({ 
+  const connectionUrl = new URL(rawConnectionString);
+  const sslMode = connectionUrl.searchParams.get("sslmode");
+  const shouldUseSSL = sslMode !== "disable";
+
+  // node-postgres can override ssl options from URL params (sslmode/sslcert/sslrootcert).
+  // Remove them so we fully control TLS behavior from runtime config.
+  connectionUrl.searchParams.delete("sslmode");
+  connectionUrl.searchParams.delete("sslcert");
+  connectionUrl.searchParams.delete("sslkey");
+  connectionUrl.searchParams.delete("sslrootcert");
+
+  const connectionString = connectionUrl.toString();
+  const isProductionRuntime =
+    process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+  const rejectUnauthorized =
+    process.env.DB_SSL_REJECT_UNAUTHORIZED != null
+      ? process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false"
+      : isProductionRuntime;
+
+  console.log(
+    `PRISMA: Initializing pg Pool (ssl=${shouldUseSSL ? "on" : "off"}, rejectUnauthorized=${rejectUnauthorized})`,
+  );
+
+  const pool = new pg.Pool({
     connectionString,
-    ssl: {
-      rejectUnauthorized: false
-    },
+    ssl: shouldUseSSL ? { rejectUnauthorized } : undefined,
     max: 2,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 10000,
   });
+
   const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    log: ["error", "warn"],
   });
 };
 
