@@ -20,5 +20,5 @@ model File {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@schema("storage")
+  @@schema("app_storage")
 }
