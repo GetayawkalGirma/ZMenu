@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Search, 
-  Filter, 
-  Utensils, 
-  GlassWater, 
-  PlusCircle, 
+import {
+  Search,
+  Filter,
+  Utensils,
+  GlassWater,
+  PlusCircle,
   Tag,
   Leaf,
   Beef,

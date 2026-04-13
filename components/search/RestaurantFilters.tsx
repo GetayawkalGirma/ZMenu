@@ -218,17 +218,22 @@ export function RestaurantFilters() {
                   className="rounded-md border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                 />
                 <div className="flex items-center gap-2">
-                   <Icon className={cn("w-3.5 h-3.5", active ? "text-indigo-600" : "text-gray-400")} />
-                   <span
-                     className={cn(
-                       "text-sm font-bold transition-colors",
-                       active
-                         ? "text-indigo-700"
-                         : "text-gray-600 group-hover:text-gray-900",
-                     )}
-                   >
-                     {feat.label}
-                   </span>
+                  <Icon
+                    className={cn(
+                      "w-3.5 h-3.5",
+                      active ? "text-indigo-600" : "text-gray-400",
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "text-sm font-bold transition-colors",
+                      active
+                        ? "text-indigo-700"
+                        : "text-gray-600 group-hover:text-gray-900",
+                    )}
+                  >
+                    {feat.label}
+                  </span>
                 </div>
               </label>
             );
