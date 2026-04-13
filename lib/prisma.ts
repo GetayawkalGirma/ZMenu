@@ -26,12 +26,10 @@ const getClient = () => {
   connectionUrl.searchParams.delete("sslrootcert");
 
   const connectionString = connectionUrl.toString();
-  const isProductionRuntime =
-    process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
   const rejectUnauthorized =
     process.env.DB_SSL_REJECT_UNAUTHORIZED != null
       ? process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false"
-      : isProductionRuntime;
+      : false;
 
   console.log(
     `PRISMA: Initializing pg Pool (ssl=${shouldUseSSL ? "on" : "off"}, rejectUnauthorized=${rejectUnauthorized})`,
