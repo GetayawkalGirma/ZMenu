@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
 import { 
   Badge, 

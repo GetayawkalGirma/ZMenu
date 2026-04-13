@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { MenuItemFilters } from "@/components/search/MenuItemFilters";
 import { MealCard } from "@/components/meal/MealCard";
 import { Sparkles, Utensils } from "lucide-react";

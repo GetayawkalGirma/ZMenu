@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { RestaurantMenuService } from "@/services/menu-item/menu-item.service";
 import { SuperFoodCard } from "@/components/meal/SuperFoodCard";
 import { RestaurantMenuFilters } from "@/components/search/RestaurantMenuFilters";

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { MenuItemService } from "@/services/menu-item/menu-item.service";
 import { Badge, Button, Card } from "@/components/ui";
 import {
