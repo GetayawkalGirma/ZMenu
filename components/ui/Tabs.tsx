@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
+
+interface TabsContextType {
+  activeTab: string;
+  setActiveTab: (value: string) => void;
+}
+
+const TabsContext = createContext<TabsContextType | undefined>(undefined);
 
 interface TabsProps {
   defaultValue?: string;
@@ -18,52 +25,28 @@ interface TabsTriggerProps {
   value: string;
   className?: string;
   children: React.ReactNode;
-  isActive?: boolean;
   disabled?: boolean;
-  onClick?: () => void;
 }
 
 interface TabsContentProps {
   value: string;
   className?: string;
   children: React.ReactNode;
-  isActive?: boolean;
 }
 
 export function Tabs({ defaultValue, className, children }: TabsProps) {
   const [activeTab, setActiveTab] = useState(defaultValue || "");
 
   return (
-    <div className={cn("w-full", className)}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          const childType = child.type as any;
-
-          if (childType.name === "TabsList") {
-            return React.cloneElement(child as React.ReactElement<any>, {
-              activeTab,
-              setActiveTab,
-            });
-          }
-
-          if (childType.name === "TabsContent") {
-            return React.cloneElement(child as React.ReactElement<any>, {
-              isActive: (child as any).props.value === activeTab,
-            });
-          }
-        }
-        return child;
-      })}
-    </div>
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      <div className={cn("w-full", className)}>
+        {children}
+      </div>
+    </TabsContext.Provider>
   );
 }
 
-export function TabsList({
-  className,
-  children,
-  activeTab,
-  setActiveTab,
-}: any) {
+export function TabsList({ className, children }: TabsListProps) {
   return (
     <div
       className={cn(
@@ -71,22 +54,7 @@ export function TabsList({
         className,
       )}
     >
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          const childElement = child as React.ReactElement<any>;
-          const isDisabled = childElement.props.disabled;
-
-          return React.cloneElement(childElement, {
-            isActive: childElement.props.value === activeTab,
-            onClick: () => {
-              if (!isDisabled) {
-                setActiveTab?.(childElement.props.value);
-              }
-            },
-          });
-        }
-        return child;
-      })}
+      {children}
     </div>
   );
 }
@@ -95,13 +63,16 @@ export function TabsTrigger({
   value,
   className,
   children,
-  isActive,
   disabled,
-  onClick,
 }: TabsTriggerProps) {
+  const context = useContext(TabsContext);
+  if (!context) throw new Error("TabsTrigger must be used within Tabs");
+
+  const isActive = context.activeTab === value;
+
   return (
     <button
-      onClick={onClick}
+      onClick={() => !disabled && context.setActiveTab(value)}
       disabled={disabled}
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -120,9 +91,11 @@ export function TabsContent({
   value,
   className,
   children,
-  isActive,
 }: TabsContentProps) {
-  if (!isActive) return null;
+  const context = useContext(TabsContext);
+  if (!context) throw new Error("TabsContent must be used within Tabs");
+
+  if (context.activeTab !== value) return null;
 
   return (
     <div
