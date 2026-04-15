@@ -25,6 +25,7 @@ import {
   DialogTrigger,
   DialogHeader,
   DialogTitle,
+  DialogClose,
   Badge,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,7 @@ const FEATURES = [
   { id: "cards", label: "Accepts Cards", icon: CreditCard },
 ];
 
-export function RestaurantFilters() {
+export function RestaurantFilters({ trigger }: { trigger?: React.ReactNode }) {
   const [isNearMe, setIsNearMe] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
@@ -241,9 +242,6 @@ export function RestaurantFilters() {
         </div>
       </div>
 
-      <Button className="w-full h-14 rounded-2xl bg-gray-900 hover:bg-black font-black uppercase tracking-[0.2em] text-xs shadow-xl mt-4">
-        Apply Filters
-      </Button>
     </div>
   );
 
@@ -270,22 +268,31 @@ export function RestaurantFilters() {
         <FilterContent />
       </aside>
 
-      {/* Mobile Floating Trigger */}
-      <div className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full px-4">
+      {/* Mobile Floating Trigger - Relocated for Nav Compatibility */}
+      <div className="md:hidden">
         <Dialog>
-          <DialogTrigger asChild>
-            <Button className="w-full h-14 rounded-2xl bg-gray-900 text-white shadow-2xl shadow-blue-200 font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3">
-              <Filter className="w-4 h-4" />
-              Filter & Sort
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] h-[90vh] overflow-y-auto p-8 rounded-t-[3rem] border-0 shadow-2xl transition-all duration-500 animate-in slide-in-from-bottom-full">
-            <DialogHeader className="mb-8">
-              <DialogTitle className="text-2xl font-black text-gray-900 tracking-tighter uppercase">
+          {trigger ? (
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+          ) : (
+            <DialogTrigger asChild>
+              <Button className="w-full h-12 rounded-xl bg-gray-900 text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
+                <Filter className="w-4 h-4" />
+                Filter
+              </Button>
+            </DialogTrigger>
+          )}
+          <DialogContent className="sm:max-w-[425px] h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-t-[2.5rem] border-0 shadow-2xl transition-all duration-500 animate-in slide-in-from-bottom-full">
+            <DialogHeader className="mb-6 sm:mb-8 text-left">
+              <DialogTitle className="text-xl sm:text-2xl font-black text-gray-900 tracking-tighter uppercase">
                 Filters
               </DialogTitle>
             </DialogHeader>
             <FilterContent />
+            <DialogClose asChild>
+              <Button className="w-full h-14 rounded-2xl bg-gray-900 hover:bg-black font-black uppercase tracking-[0.2em] text-xs shadow-xl mt-4">
+                Apply Filters
+              </Button>
+            </DialogClose>
           </DialogContent>
         </Dialog>
       </div>

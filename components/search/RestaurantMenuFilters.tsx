@@ -19,12 +19,17 @@ import {
 } from "lucide-react";
 import {
   Button,
-  Input,
   Dialog,
-  DialogContent,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
   DialogTrigger,
+  DialogContent,
   DialogHeader,
+  DialogFooter,
   DialogTitle,
+  DialogDescription,
+  Input,
   Badge,
   Label,
   Checkbox,
@@ -60,8 +65,10 @@ const PORTIONS = [
 
 export function RestaurantMenuFilters({
   isGlobal = false,
+  trigger,
 }: {
   isGlobal?: boolean;
+  trigger?: React.ReactNode;
 }) {
   const [dietary, setDietary] = useState<"all" | "fasting" | "meat">("all");
   const [nearMe, setNearMe] = useState(false);
@@ -257,7 +264,7 @@ export function RestaurantMenuFilters({
         </div>
       </div>
 
-      {/* Meal Kinds Checklist (Copied from RestaurantFilters) */}
+      {/* Meal Kinds Checklist */}
       <div className="space-y-4 pt-4 border-t border-gray-50">
         <div className="flex justify-between items-center px-1">
           <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -423,18 +430,14 @@ export function RestaurantMenuFilters({
               {opt.label}
               <ArrowUpDown
                 className={cn(
-                  "w-3.5 h-3.5",
-                  sortBy === opt.id ? "opacity-100" : "opacity-0",
+                   "w-3.5 h-3.5",
+                   sortBy === opt.id ? "opacity-100" : "opacity-0",
                 )}
               />
             </button>
           ))}
         </div>
       </div>
-
-      <Button className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-blue-200 mt-4">
-        Discover Meals
-      </Button>
     </div>
   );
 
@@ -460,22 +463,31 @@ export function RestaurantMenuFilters({
         <FilterContent />
       </div>
 
-      {/* Mobile Version - Floating FAB & Drawer */}
-      <div className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full px-4">
+      {/* Mobile Version - Explicit Trigger Support */}
+      <div className="md:hidden">
         <Dialog>
-          <DialogTrigger asChild>
-            <Button className="w-full h-14 rounded-2xl bg-gray-900 text-white shadow-2xl shadow-gray-400 font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3">
-              <Filter className="w-4 h-4" />
-              Filter Menu
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] h-[90vh] overflow-y-auto p-8 rounded-t-[3rem] border-0 shadow-2xl transition-all duration-500 animate-in slide-in-from-bottom-full">
-            <DialogHeader className="mb-8">
-              <DialogTitle className="text-2xl font-black text-gray-900 tracking-tighter uppercase">
+          {trigger ? (
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+          ) : (
+            <DialogTrigger asChild>
+              <Button className="w-full h-12 rounded-xl bg-gray-900 text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
+                <Filter className="w-4 h-4" />
+                Filters
+              </Button>
+            </DialogTrigger>
+          )}
+          <DialogContent className="sm:max-w-[425px] h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-t-[2.5rem] border-0 shadow-2xl transition-all duration-500 animate-in slide-in-from-bottom-full">
+            <DialogHeader className="mb-6 sm:mb-8 text-left">
+              <DialogTitle className="text-xl sm:text-2xl font-black text-gray-900 tracking-tighter uppercase">
                 Refine Menu
               </DialogTitle>
             </DialogHeader>
             <FilterContent />
+            <DialogClose asChild>
+              <Button className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-blue-200 mt-4">
+                Apply Filters
+              </Button>
+            </DialogClose>
           </DialogContent>
         </Dialog>
       </div>
