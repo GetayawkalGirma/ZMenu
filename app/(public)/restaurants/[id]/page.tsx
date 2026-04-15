@@ -1,4 +1,12 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // Cache for 24 hours
+
+export async function generateStaticParams() {
+  const result = await RestaurantService.getAllRestaurants();
+  const restaurants = result.success ? result.data || [] : [];
+  return restaurants.map((res) => ({
+    id: res.id,
+  }));
+}
 
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
 import { 
