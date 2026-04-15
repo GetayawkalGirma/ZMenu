@@ -1,38 +1,69 @@
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
 import { UtensilsCrossed, TrendingUp, Search, Filter } from "lucide-react";
 import { RestaurantCard } from "@/components/restaurant/RestaurantCard";
 import { RestaurantFilters } from "@/components/search/RestaurantFilters";
+import { RestaurantGridSkeleton } from "@/components/restaurant/RestaurantCardSkeleton";
+import { Suspense } from "react";
 
-export default async function RestaurantsPage() {
+export const revalidate = 3600; // Cache for 1 hour
+
+async function RestaurantList() {
   const result = await RestaurantService.getAllRestaurants();
   const restaurants: any[] = result.success ? result.data || [] : [];
-
+  
   return (
-    <div className="min-h-screen bg-gray-50/30">
-      {/* Hero Search Section */}
-      <section className="relative bg-white pt-10 pb-20 sm:pt-20 sm:pb-32 overflow-hidden border-b border-gray-100">
-        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
-          <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full blur-[120px]" />
-          <div className="absolute top-1/2 -right-24 w-64 h-64 bg-indigo-500 rounded-full blur-[100px]" />
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
+      {restaurants.length > 0 ? (
+        restaurants.map((restaurant) => (
+          <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+        ))
+      ) : (
+        <div className="col-span-full py-20 text-center bg-white rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100 p-8">
+           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <UtensilsCrossed className="w-8 h-8 sm:w-10 sm:h-10 text-gray-200" />
+           </div>
+           <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Quiet Directory</h3>
+           <p className="text-gray-400 font-medium text-xs sm:text-sm max-w-xs mx-auto mb-8">
+              Be the pioneer. Add the first restaurant.
+           </p>
+           <Link href="/admin/restaurant-management/new">
+              <Button className="rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[9px] bg-blue-600 shadow-xl shadow-blue-100 hover:bg-black transition-all">
+                Initialize
+              </Button>
+           </Link>
         </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center sm:text-left">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 sm:gap-12">
+      )}
+    </div>
+  );
+}
+
+export default async function RestaurantsPage() {
+  return (
+    <div className="bg-white min-h-screen">
+      {/* Search & Discover Hero - Premium Aesthetic */}
+      <section className="bg-white border-b border-gray-100 pt-6 sm:pt-16 pb-6 sm:pb-24 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-50/50 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-[80px]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 sm:gap-12 text-center sm:text-left">
             <div className="max-w-3xl space-y-4 sm:space-y-6">
-              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-blue-100 shadow-sm">
-                <TrendingUp className="w-3 h-3" />
-                <span>Exploring Addis Ababa</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-900 text-white text-[8px] sm:text-[10px] font-black rounded-full uppercase tracking-widest shadow-lg">
+                <UtensilsCrossed className="w-3 h-3" /> Premier Venues
               </div>
-              <h1 className="text-3xl sm:text-7xl font-black text-gray-900 tracking-tighter leading-none uppercase">
-                Find Your <br className="hidden sm:block" />
-                Next <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 uppercase">Crave.</span>
+              <h1 className="text-3xl sm:text-7xl font-black text-gray-900 tracking-tighter uppercase leading-none">
+                Beyond The <br className="hidden sm:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 uppercase">
+                   Plate.
+                </span>
               </h1>
-              <p className="text-sm sm:text-xl text-gray-400 font-medium max-w-xl leading-relaxed italic mx-auto sm:mx-0">
-                Browse through real-time menus, prices, and locations of top-tier restaurants.
+              <p className="text-sm sm:text-lg text-gray-400 font-medium leading-relaxed max-w-xl mx-auto sm:mx-0">
+                 Explore the most celebrated restaurants, cafes, and bars in the city. Real menus, real voices.
               </p>
             </div>
             
@@ -68,49 +99,35 @@ export default async function RestaurantsPage() {
         </div>
       </section>
 
-      {/* Main Listing Section */}
-      <section className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 -mt-10 sm:-mt-16 pb-20 sm:pb-32">
-        <div className="flex flex-col lg:flex-row gap-6 sm:gap-12">
-          {/* Persistent Sidebar */}
-          <div className="w-full lg:w-80 shrink-0">
-             <RestaurantFilters />
-          </div>
-          
-          <div className="flex-1 space-y-6 sm:space-y-10">
-            {/* Control Strip */}
-            <div className="flex items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-gray-100 px-2">
-               <div className="flex items-center gap-2 sm:gap-4">
-                  <h2 className="text-[10px] sm:text-lg font-black text-gray-900 uppercase tracking-tighter">Directory</h2>
-                  <div className="h-4 w-px bg-gray-100" />
-                  <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                     {restaurants.length} Venues
-                  </span>
-               </div>
+      {/* Grid Section */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-16">
+        <div className="flex flex-col lg:flex-row gap-6 sm:gap-16">
+          {/* Sidebar */}
+          <aside
+            className="hidden lg:block w-80 shrink-0"
+          >
+            <div className="sticky top-24">
+               <RestaurantFilters />
+            </div>
+          </aside>
+
+          {/* Results Grid */}
+          <div className="flex-1 space-y-6 sm:space-y-12">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-50 text-blue-600 rounded-lg sm:rounded-2xl flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xs sm:text-xl font-black text-gray-900 uppercase tracking-tighter">Verified Hubs</h2>
+                  <p className="text-[8px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Updated hourly</p>
+                </div>
+              </div>
             </div>
 
-            {/* HIGH DENSITY GRID - 2 COL MOBILE */}
-            <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-8">
-              {restaurants.length > 0 ? (
-                restaurants.map((restaurant) => (
-                  <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-                ))
-              ) : (
-                <div className="col-span-full py-20 text-center bg-white rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100 p-8">
-                   <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <UtensilsCrossed className="w-8 h-8 sm:w-10 sm:h-10 text-gray-200" />
-                   </div>
-                   <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Quiet Directory</h3>
-                   <p className="text-gray-400 font-medium text-xs sm:text-sm max-w-xs mx-auto mb-8">
-                      Be the pioneer. Add the first restaurant.
-                   </p>
-                   <Link href="/admin/restaurant-management/new">
-                      <Button className="rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[9px] bg-blue-600 shadow-xl shadow-blue-100 hover:bg-black transition-all">
-                        Initialize
-                      </Button>
-                   </Link>
-                </div>
-              )}
-            </div>
+            <Suspense fallback={<RestaurantGridSkeleton count={8} />}>
+               <RestaurantList />
+            </Suspense>
           </div>
         </div>
       </section>

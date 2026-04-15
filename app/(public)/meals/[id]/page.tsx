@@ -1,4 +1,11 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // Cache for 24 hours
+
+export async function generateStaticParams() {
+  const meals = await MenuItemService.getAllMenuItems();
+  return meals.map((meal) => ({
+    id: meal.id,
+  }));
+}
 
 import { MenuItemService } from "@/services/menu-item/menu-item.service";
 import { Badge, Button, Card } from "@/components/ui";

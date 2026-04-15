@@ -1,14 +1,33 @@
-export const dynamic = "force-dynamic";
-
 import { MenuItemFilters } from "@/components/search/MenuItemFilters";
 import { MealCard } from "@/components/meal/MealCard";
 import { Sparkles, Utensils, Filter } from "lucide-react";
 import { MenuItemService } from "@/services/menu-item/menu-item.service";
 import { Button } from "@/components/ui";
+import { FoodGridSkeleton } from "@/components/meal/SuperFoodCardSkeleton";
+import { Suspense } from "react";
+
+export const revalidate = 60; // Cache search results for 1 minute
+
+async function SearchList() {
+  const menuItems = await MenuItemService.getAllMenuItems();
+  
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-8 overflow-hidden">
+      {menuItems.length > 0 ? (
+        menuItems.map((meal: any) => (
+          <MealCard key={meal.id} meal={meal} showActions={false} />
+        ))
+      ) : (
+        <div className="col-span-full py-20 flex flex-col items-center justify-center bg-white rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100">
+          <Utensils className="w-10 h-10 sm:w-16 sm:h-16 mb-4 sm:mb-6 text-gray-100" />
+          <p className="text-xs sm:text-lg text-gray-400 font-black uppercase tracking-tighter text-center">No match found.</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default async function SearchPage() {
-  const menuItems = await MenuItemService.getAllMenuItems();
-
   return (
     <div className="min-h-screen bg-gray-50/30">
       {/* Search Hero Section */}
@@ -48,7 +67,7 @@ export default async function SearchPage() {
             <div className="flex items-center justify-between bg-white/50 backdrop-blur-md p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-white/50 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-widest">
-                  Found <span className="text-gray-900 font-black">{menuItems.length}</span> Results
+                  Live Index
                 </div>
                 
                 {/* Mobile Filter Trigger */}
@@ -69,36 +88,25 @@ export default async function SearchPage() {
               </div>
             </div>
 
-            {menuItems.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-8">
-                {menuItems.map((meal: any) => (
-                  <MealCard key={meal.id} meal={meal} showActions={false} />
-                ))}
-              </div>
-            ) : (
-              <div className="py-20 flex flex-col items-center justify-center bg-white rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100">
-                <Utensils className="w-10 h-10 sm:w-16 sm:h-16 mb-4 sm:mb-6 text-gray-100" />
-                <p className="text-xs sm:text-lg text-gray-400 font-black uppercase tracking-tighter text-center">No match found.</p>
-              </div>
-            )}
+            <Suspense fallback={<FoodGridSkeleton count={15} />}>
+              <SearchList />
+            </Suspense>
 
             {/* Pagination Placeholder */}
-            {menuItems.length > 10 && (
-              <div className="pt-8 flex justify-center">
-                 <div className="flex gap-2">
-                   {[1, 2, 3].map(page => (
-                     <button 
-                       key={page}
-                       className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs transition-all ${
-                         page === 1 ? "bg-gray-900 text-white shadow-xl" : "bg-white text-gray-400 hover:bg-gray-50 border border-gray-100"
-                       }`}
-                     >
-                       {page}
-                     </button>
-                   ))}
-                 </div>
-              </div>
-            )}
+            <div className="pt-8 flex justify-center">
+                <div className="flex gap-2">
+                  {[1, 2, 3].map(page => (
+                    <button 
+                      key={page}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs transition-all ${
+                        page === 1 ? "bg-gray-900 text-white shadow-xl" : "bg-white text-gray-400 hover:bg-gray-50 border border-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+            </div>
           </div>
         </div>
       </section>

@@ -1,14 +1,35 @@
-export const dynamic = "force-dynamic";
-
 import { RestaurantMenuService } from "@/services/menu-item/menu-item.service";
 import { SuperFoodCard } from "@/components/meal/SuperFoodCard";
+import { FoodGridSkeleton } from "@/components/meal/SuperFoodCardSkeleton";
 import { RestaurantMenuFilters } from "@/components/search/RestaurantMenuFilters";
 import { Utensils, LayoutGrid, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui";
+import { Suspense } from "react";
+
+export const revalidate = 3600; // Cache for 1 hour
+
+async function FoodList() {
+  const foods = await RestaurantMenuService.getAllRestaurantMenus();
+  
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-6 md:gap-8">
+      {foods.length > 0 ? (
+        foods.map((item: any) => (
+          <SuperFoodCard key={item.id} item={item} />
+        ))
+      ) : (
+        <div className="col-span-full py-20 sm:py-32 text-center bg-gray-50 rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100 flex flex-col items-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-xl">
+             <Utensils className="w-6 h-6 sm:w-8 sm:h-8 text-gray-200" />
+          </div>
+          <p className="text-sm sm:text-lg text-gray-400 font-black uppercase tracking-tighter">No delicacies found.</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default async function FoodDiscoveryPage() {
-  const foods = await RestaurantMenuService.getAllRestaurantMenus();
-
   return (
     <div className="bg-white min-h-screen">
       {/* Premium Discovery Header */}
@@ -56,7 +77,7 @@ export default async function FoodDiscoveryPage() {
                 </h2>
                 <div className="h-4 w-px bg-gray-100 hidden sm:block" />
                 <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest hidden xs:block">
-                  {foods.length} Dishes
+                  Live Menu
                 </span>
               </div>
 
@@ -85,20 +106,9 @@ export default async function FoodDiscoveryPage() {
             </div>
 
             {/* The Ultimate Super Grid - High Density Mobile First */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-6 md:gap-8">
-              {foods.length > 0 ? (
-                foods.map((item: any) => (
-                  <SuperFoodCard key={item.id} item={item} />
-                ))
-              ) : (
-                <div className="col-span-full py-20 sm:py-32 text-center bg-gray-50 rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100 flex flex-col items-center">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-xl">
-                     <Utensils className="w-6 h-6 sm:w-8 sm:h-8 text-gray-200" />
-                  </div>
-                  <p className="text-sm sm:text-lg text-gray-400 font-black uppercase tracking-tighter">No delicacies found.</p>
-                </div>
-              )}
-            </div>
+            <Suspense fallback={<FoodGridSkeleton count={12} />}>
+              <FoodList />
+            </Suspense>
           </div>
         </div>
       </div>
