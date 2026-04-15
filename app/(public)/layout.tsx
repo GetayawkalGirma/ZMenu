@@ -9,46 +9,46 @@ export default function PublicLayout({
 }) {
   return (
     <div className="min-h-full flex flex-col bg-white">
-      {/* Premium Navigation Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 sm:h-20">
+      {/* Premium Navigation Header - Compact on Mobile */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm transition-all h-14 sm:h-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex justify-between items-center h-full">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
-                <span className="text-white font-black text-xl tracking-tighter">
+            <Link href="/" className="flex items-center space-x-2 sm:space-x-2 group">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform shrink-0">
+                <span className="text-white font-black text-sm sm:text-xl tracking-tighter">
                   Z
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-black text-gray-900 leading-none">
+                <span className="text-sm sm:text-xl font-black text-gray-900 leading-none">
                   Menu
                 </span>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">
+                <span className="text-[7px] sm:text-[10px] font-black text-blue-600 uppercase tracking-widest mt-0.5 hidden xs:block">
                   Directory
                 </span>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-2">
+            <nav className="hidden md:flex items-center space-x-1">
               <Link
                 href="/restaurants"
-                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-all rounded-xl hover:bg-gray-50 active:scale-95"
+                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl hover:bg-gray-50 active:scale-95"
               >
                 <Store className="w-4 h-4" />
                 <span>Restaurants</span>
               </Link>
               <Link
                 href="/search"
-                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-all rounded-xl hover:bg-gray-50 active:scale-95"
+                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl hover:bg-gray-50 active:scale-95"
               >
                 <ChefHat className="w-4 h-4" />
-                <span>Search Meals</span>
+                <span>Search</span>
               </Link>
               <Link
                 href="/Food"
-                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-sm font-bold uppercase tracking-tight transition-all rounded-xl hover:bg-gray-50 active:scale-95"
+                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl hover:bg-gray-50 active:scale-95"
               >
                 <Pizza className="w-4 h-4" />
                 <span>Foods</span>
@@ -56,18 +56,18 @@ export default function PublicLayout({
             </nav>
 
             {/* Premium Action Button */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link href="/admin">
                 <Button
                   variant="ghost"
-                  className="text-gray-400 hover:text-gray-900 font-bold text-xs uppercase tracking-widest px-4 h-10"
+                  className="text-gray-400 hover:text-gray-900 font-bold text-[8px] sm:text-xs uppercase tracking-widest px-2 sm:px-4 h-8 sm:h-10"
                 >
                   Admin <span className="hidden sm:inline ml-1">Portal</span>
                 </Button>
               </Link>
-              <Link href="/search">
-                <Button className="hidden sm:flex bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-100 rounded-xl px-6 font-black uppercase tracking-tighter text-xs h-11">
-                  Start Exploring
+              <Link href="/search" className="hidden xs:block">
+                <Button className="bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-100 rounded-lg sm:rounded-xl px-3 sm:px-6 font-black uppercase tracking-tighter text-[9px] sm:text-xs h-9 sm:h-11">
+                  Find Food
                 </Button>
               </Link>
             </div>
@@ -76,10 +76,34 @@ export default function PublicLayout({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 relative">{children}</main>
+      <main className="flex-1 relative pb-20 md:pb-0">{children}</main>
+
+      {/* Mobile Bottom Navigation - Strategic Density */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 px-6 py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+         <div className="flex items-center justify-between max-w-sm mx-auto">
+            <Link href="/Food" className="flex flex-col items-center gap-1 group">
+               <div className="w-10 h-10 rounded-2xl flex items-center justify-center group-active:bg-blue-50 transition-colors">
+                  <Pizza className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
+               </div>
+               <span className="text-[7px] font-black uppercase tracking-widest text-gray-400">Foods</span>
+            </Link>
+            <Link href="/search" className="flex flex-col items-center gap-1 group">
+               <div className="w-12 h-12 bg-gray-900 rounded-[1.5rem] flex items-center justify-center -mt-8 shadow-2xl shadow-blue-200 border-4 border-white">
+                  <ChefHat className="w-5 h-5 text-white" />
+               </div>
+               <span className="text-[7px] font-black uppercase tracking-widest text-gray-900">Search</span>
+            </Link>
+            <Link href="/restaurants" className="flex flex-col items-center gap-1 group">
+               <div className="w-10 h-10 rounded-2xl flex items-center justify-center group-active:bg-blue-50 transition-colors">
+                  <Store className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
+               </div>
+               <span className="text-[7px] font-black uppercase tracking-widest text-gray-400">Venues</span>
+            </Link>
+         </div>
+      </nav>
 
       {/* Elevated Footer */}
-      <footer className="bg-white border-t border-gray-100">
+      <footer className="bg-white border-t border-gray-100 hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 sm:gap-16">
             {/* Brand Identity */}
@@ -180,6 +204,11 @@ export default function PublicLayout({
             </div>
           </div>
         </div>
+      </footer>
+
+      {/* Very Compact Mobile Footer - Legal Only */}
+      <footer className="md:hidden bg-white px-4 pb-32 pt-8 border-t border-gray-50 text-center">
+         <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">© 2026 ZMenu Directory</p>
       </footer>
     </div>
   );

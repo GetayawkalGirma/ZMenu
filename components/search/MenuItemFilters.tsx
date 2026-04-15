@@ -23,6 +23,7 @@ import {
   DialogTrigger,
   DialogHeader,
   DialogTitle,
+  DialogClose,
   Checkbox,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,7 @@ const CATEGORIES = [
   "Drinks",
 ];
 
-export function MenuItemFilters() {
+export function MenuItemFilters({ trigger }: { trigger?: React.ReactNode }) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
@@ -157,10 +158,6 @@ export function MenuItemFilters() {
         </div>
       </div>
 
-      <Button className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-indigo-100 mt-4 group">
-        Explore Directory
-        <Tag className="w-4 h-4 ml-2 group-hover:rotate-12 transition-transform" />
-      </Button>
     </div>
   );
 
@@ -180,21 +177,32 @@ export function MenuItemFilters() {
         <FilterContent />
       </aside>
 
-      <div className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full px-4">
+      {/* Mobile Trigger Support */}
+      <div className="md:hidden">
         <Dialog>
-          <DialogTrigger asChild>
-            <Button className="w-full h-14 rounded-2xl bg-indigo-600 text-white shadow-2xl shadow-indigo-200 font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3">
-              <Filter className="w-4 h-4" />
-              Tune Your Search
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] h-[90vh] overflow-y-auto p-8 rounded-t-[3rem] border-0 shadow-2xl animate-in slide-in-from-bottom-full duration-500">
-            <DialogHeader className="mb-8">
-              <DialogTitle className="text-2xl font-black text-gray-900 tracking-tighter uppercase">
+          {trigger ? (
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+          ) : (
+            <DialogTrigger asChild>
+              <Button className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
+                <Filter className="w-4 h-4" />
+                Tune Search
+              </Button>
+            </DialogTrigger>
+          )}
+          <DialogContent className="sm:max-w-[425px] h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-t-[2.5rem] border-0 shadow-2xl animate-in slide-in-from-bottom-full duration-500">
+            <DialogHeader className="mb-6 sm:mb-8 text-left">
+              <DialogTitle className="text-xl sm:text-2xl font-black text-gray-900 tracking-tighter uppercase">
                 Refine Search
               </DialogTitle>
             </DialogHeader>
             <FilterContent />
+            <DialogClose asChild>
+              <Button className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-indigo-100 mt-4 group">
+                Apply Filters
+                <Tag className="w-4 h-4 ml-2 group-hover:rotate-12 transition-transform" />
+              </Button>
+            </DialogClose>
           </DialogContent>
         </Dialog>
       </div>
