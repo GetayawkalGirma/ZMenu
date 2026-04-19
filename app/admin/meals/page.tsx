@@ -168,31 +168,31 @@ export default function MealsPage() {
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          {/* Header */}
+          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-                Meals Management
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight uppercase">
+                Meals
               </h1>
-              <p className="mt-1 text-gray-500 font-medium">
-                Create and manage global meals that can be used across all
-                restaurants.
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 font-medium italic">
+                Global meal directory for all restaurants.
               </p>
             </div>
             <Button
               size="lg"
               onClick={handleCreateClick}
-              className="shadow-lg shadow-blue-200 shrink-0"
+              className="w-full sm:w-auto shadow-lg shadow-blue-200 uppercase font-black text-[10px] tracking-widest rounded-xl"
             >
               Create New Meal
             </Button>
           </div>
 
           {/* Search + Filters */}
-          <div className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="mb-6 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
             <SearchFilterBar
               searchValue={searchQuery}
               onSearchChange={handleSearchChange}
-              searchPlaceholder="Search meals by name, description, or tag..."
+              searchPlaceholder="Search by name, desc, or tag..."
               filters={categoryFilterConfig}
               activeFilters={{ category: categoryFilter }}
               onFilterChange={handleFilterChange}
@@ -227,7 +227,7 @@ export default function MealsPage() {
           ) : (
             <>
               {/* Meals Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {meals.length === 0 ? (
                   <div className="col-span-full text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
                     <div className="text-gray-400 mb-4">
