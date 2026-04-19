@@ -1,51 +1,73 @@
-export const revalidate = 86400; // Cache for 24 hours
-
-export async function generateStaticParams() {
-  const result = await RestaurantService.getAllRestaurants();
-  const restaurants = result.success ? result.data || [] : [];
-  return restaurants.map((res) => ({
-    id: res.id,
-  }));
-}
-
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
+import { RestaurantMenuService } from "@/services/menu-item/menu-item.service";
 import { 
   Badge, 
   Button, 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
 } from "@/components/ui";
 import { 
   MapPin, 
-  Clock, 
   Globe, 
   Info, 
-  ChefHat, 
   ArrowLeft,
   Navigation,
   Utensils,
   LayoutGrid,
-  Leaf,
-  GlassWater,
-  IceCream,
-  Beef,
-  Flame,
-  Droplets,
-  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { RestaurantFeaturesView } from "@/components/restaurant/RestaurantFeaturesView";
 import { RestaurantMenuFilters } from "@/components/search/RestaurantMenuFilters";
-import { PortionSize } from "@/lib/types/meal";
-import { formatPrice } from "@/lib/utils";
-import { SuperFoodCard } from "@/components/meal/SuperFoodCard";
+import { RestaurantMenuInfinite } from "@/components/restaurant/RestaurantMenuInfinite";
+import { Suspense } from "react";
+
+export const revalidate = 0; // Disable static caching for real-time filters
+
+async function MenuList({ 
+  restaurantId, 
+  searchParams, 
+  restaurant 
+}: { 
+  restaurantId: string; 
+  searchParams: any;
+  restaurant: any;
+}) {
+  const params = await searchParams;
+  const categories = params.categories?.split(",").filter(Boolean);
+  const search = params.search;
+  const dietary = params.dietary;
+  const sortBy = params.sortBy;
+  const spicy = params.spicy ? parseInt(params.spicy as string) : undefined;
+  const minPrice = params.minPrice ? parseFloat(params.minPrice as string) : undefined;
+  const maxPrice = params.maxPrice ? parseFloat(params.maxPrice as string) : undefined;
+
+  const result = await RestaurantMenuService.getRestaurantMenu({
+    restaurantId,
+    page: 1,
+    pageSize: 12,
+    search,
+    dietaryCategory: dietary,
+    categoryNames: categories,
+    sortBy,
+    spicyLevel: spicy,
+    minPrice,
+    maxPrice,
+  });
+
+  return (
+    <RestaurantMenuInfinite 
+      restaurantId={restaurantId}
+      initialItems={result.items}
+      initialTotal={result.total}
+      restaurant={restaurant}
+    />
+  );
+}
 
 export default async function PublicRestaurantDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { id } = await params;
   const result = await RestaurantService.getRestaurantById(id);
@@ -68,7 +90,28 @@ export default async function PublicRestaurantDetailPage({
   }
 
   const restaurant = result.data as any;
-  const menuItems = restaurant.menuItems || [];
+
+  // Directions logic: Extract URL from iframe if present, otherwise construct from name/location
+  let directionsUrl = "";
+  const isIframe = restaurant.geoLocation?.includes("<iframe");
+  
+  if (isIframe) {
+    // Try to extract src from iframe
+    const srcMatch = restaurant.geoLocation.match(/src="([^"]+)"/);
+    if (srcMatch && srcMatch[1]) {
+        // If it's a google maps embed, we can transform it or just use the query-based directions which is more reliable
+        const query = encodeURIComponent(`${restaurant.name} ${restaurant.location || ""}`.trim());
+        directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
+    }
+  } else if (restaurant.geoLocation && restaurant.geoLocation.startsWith("http")) {
+    directionsUrl = restaurant.geoLocation;
+  }
+  
+  // Final fallback if we still don't have a good directions URL
+  if (!directionsUrl) {
+    const query = encodeURIComponent(`${restaurant.name} ${restaurant.location || ""}`.trim());
+    directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
+  }
 
   return (
     <div className="bg-white min-h-screen">
@@ -104,21 +147,19 @@ export default async function PublicRestaurantDetailPage({
                      </div>
                      <div className="flex items-center text-gray-500 font-bold uppercase tracking-tight text-[10px] sm:text-sm">
                         <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-blue-600" />
-                        {menuItems.length} Meals
+                        {restaurant.mealCount || 0} Meals
                      </div>
                   </div>
                </div>
 
-               {restaurant.geoLocation && (
-                 <a 
-                   href={restaurant.geoLocation} 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="flex items-center justify-center bg-gray-900 text-white px-6 sm:px-8 h-12 sm:h-16 rounded-xl sm:rounded-[2rem] font-black uppercase tracking-[0.1em] text-[10px] sm:text-xs hover:bg-blue-600 hover:scale-105 transition-all shadow-2xl shadow-gray-200"
-                 >
-                   <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 sm:mr-3" /> Directions
-                 </a>
-               )}
+               <a 
+                 href={directionsUrl} 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className="flex items-center justify-center bg-gray-900 text-white px-6 sm:px-8 h-12 sm:h-16 rounded-xl sm:rounded-[2rem] font-black uppercase tracking-[0.1em] text-[10px] sm:text-xs hover:bg-blue-600 hover:scale-105 transition-all shadow-2xl shadow-gray-200"
+               >
+                 <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 sm:mr-3" /> Directions
+               </a>
             </div>
           </div>
         </div>
@@ -138,27 +179,26 @@ export default async function PublicRestaurantDetailPage({
                     <LayoutGrid className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
                     Menu
                  </h2>
-                 <div className="flex space-x-1 sm:space-x-2 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
-                    {["All", "Popular"].map(filter => (
-                      <button key={filter} className="px-3 sm:px-5 py-1.5 sm:py-2 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-50 rounded-lg sm:rounded-xl transition-all whitespace-nowrap">
-                        {filter}
-                      </button>
-                    ))}
+                 
+                 {/* Mobile Filter Trigger */}
+                 <div className="lg:hidden">
+                    <RestaurantMenuFilters 
+                       trigger={
+                         <Button variant="outline" className="h-10 rounded-xl px-4 border-gray-100 font-black uppercase text-[8px] tracking-widest flex items-center gap-2">
+                            <Utensils className="w-3 h-3" /> Filter Menu
+                         </Button>
+                       }
+                    />
                  </div>
               </div>
 
-              {/* HIGH DENSITY MENU GRID */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-8">
-                {menuItems.length > 0 ? (
-                  menuItems.map((rm: any) => (
-                    <SuperFoodCard key={rm.id} item={{...rm, restaurant}} />
-                  ))
-                ) : (
-                  <div className="col-span-full py-20 text-center bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-100 italic font-medium text-gray-400">
-                    No items indexed.
-                  </div>
-                )}
-              </div>
+              <Suspense fallback={<div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-8">
+                {Array.from({length: 8}).map((_, i) => (
+                  <div key={i} className="aspect-[3/4] bg-gray-50 animate-pulse rounded-2xl" />
+                ))}
+              </div>}>
+                 <MenuList restaurantId={id} searchParams={searchParams} restaurant={restaurant} />
+              </Suspense>
             </section>
 
              {/* Dynamic Embed for Location */}
@@ -223,7 +263,7 @@ export default async function PublicRestaurantDetailPage({
             <section className="space-y-4 sm:space-y-6">
                <h3 className="text-[8px] sm:text-xs font-black text-gray-400 uppercase tracking-[0.3em] px-2 mb-2 sm:mb-4">Features</h3>
                <div className="px-2">
-                  <RestaurantFeaturesView restaurantId={restaurant.id} />
+                  <RestaurantFeaturesView restaurantId={id} />
                </div>
             </section>
 

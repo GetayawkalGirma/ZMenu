@@ -5,9 +5,14 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
+  Badge,
 } from "@/components/ui";
 import { RestaurantFeaturesView } from "@/components/restaurant/RestaurantFeaturesView";
+import { RestaurantStatusToggle } from "@/components/restaurant/RestaurantStatusToggle";
 import Link from "next/link";
+import { Eye, EyeOff, MapPin, Star, Volume2, ShieldCheck, Clock, Crosshair } from "lucide-react";
+import { CalculateCoordinatesButton } from "@/components/restaurant/CalculateCoordinatesButton";
+import { cn } from "@/lib/utils";
 
 export default async function RestaurantViewPage({
   params,
@@ -40,128 +45,124 @@ export default async function RestaurantViewPage({
   }
 
   const restaurant = result.data;
+  const isPublished = restaurant.status === "PUBLISHED";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
-          <div className="mb-8 flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {restaurant.name || "Unnamed Restaurant"}
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Restaurant Details and Management
-              </p>
+          <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+            <div className="flex items-start gap-6">
+                {restaurant.logoUrl ? (
+                    <img
+                        src={restaurant.logoUrl}
+                        alt="Logo"
+                        className="w-20 h-20 rounded-2xl object-cover border border-gray-100 shadow-sm"
+                    />
+                ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-gray-300">
+                        <MapPin className="w-8 h-8" />
+                    </div>
+                )}
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">
+                            {restaurant.name || "Unnamed Restaurant"}
+                        </h1>
+                        <Badge className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-0",
+                            isPublished ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                        )}>
+                            {isPublished ? <Eye className="w-3 h-3 mr-1.5 inline" /> : <EyeOff className="w-3 h-3 mr-1.5 inline" />}
+                            {restaurant.status}
+                        </Badge>
+                    </div>
+                    <p className="text-gray-400 font-medium flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4" />
+                        {restaurant.location || "Location not set"}
+                    </p>
+                </div>
             </div>
-            <div className="space-x-2">
+            <div className="flex items-center gap-3">
               <Link href={`/admin/restaurant-management/${restaurant.id}/edit`}>
-                <Button>Edit Restaurant</Button>
+                <Button className="h-11 px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-gray-900 hover:bg-black text-white shadow-xl shadow-gray-100">
+                    Edit Details
+                </Button>
               </Link>
               <Link href="/admin/restaurant-management">
-                <Button variant="outline">Back to List</Button>
+                <Button variant="outline" className="h-11 px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] border-gray-100 hover:bg-gray-50">
+                    All Restaurants
+                </Button>
               </Link>
             </div>
           </div>
 
           {/* Restaurant Details */}
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-8 lg:grid-cols-3">
             {/* Main Info */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Restaurant Information</CardTitle>
+            <div className="lg:col-span-2 space-y-8">
+              <Card className="rounded-[2.5rem] border-gray-100 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gray-50/50 border-b border-gray-100 px-8 py-6">
+                  <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Core Attributes</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Name</h3>
-                    <p className="text-lg">{restaurant.name || "Not set"}</p>
+                <CardContent className="p-8 grid sm:grid-cols-2 gap-8">
+                  <div className="space-y-1">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Current Rating</h3>
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center text-yellow-600">
+                            <Star className="w-5 h-5 fill-current" />
+                        </div>
+                        <p className="text-2xl font-black text-gray-900">{restaurant.rating ? `${restaurant.rating}/5` : "N/A"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Location
-                    </h3>
-                    <p className="text-lg">
-                      {restaurant.location || "Not set"}
-                    </p>
+
+                  <div className="space-y-1">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Acoustics</h3>
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                            <Volume2 className="w-5 h-5" />
+                        </div>
+                        <p className="text-xl font-bold text-gray-900 capitalize">{restaurant.noiselevel || "Moderate"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Geo Location
-                    </h3>
-                    {restaurant.geoLocation ? (
-                      restaurant.geoLocation.includes('<iframe') ? (
-                        <p className="text-lg text-green-600 font-medium italic">Google Maps Embed Attached</p>
-                      ) : restaurant.geoLocation.startsWith('http') ? (
-                        <a 
-                          href={restaurant.geoLocation} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline text-lg"
-                        >
-                          View on Google Maps
-                        </a>
-                      ) : (
-                        <p className="text-lg">{restaurant.geoLocation}</p>
-                      )
-                    ) : (
-                      <p className="text-lg text-gray-400 italic">Not set</p>
-                    )}
+
+                  <div className="space-y-1">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Privacy Setting</h3>
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                            <ShieldCheck className="w-5 h-5" />
+                        </div>
+                        <p className="text-xl font-bold text-gray-900 capitalize">{restaurant.privacylevel || "Public"}</p>
+                    </div>
                   </div>
-                  {restaurant.logoUrl && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">
-                        Logo
-                      </h3>
-                      <img
-                        src={restaurant.logoUrl}
-                        alt="Restaurant Logo"
-                        className="w-32 h-32 rounded-lg object-cover mt-2"
-                      />
+
+                  <div className="space-y-1">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered Since</h3>
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <p className="text-xl font-bold text-gray-900">
+                            {new Date(restaurant.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                        </p>
                     </div>
-                  )}
-                  {restaurant.rating && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">
-                        Rating
-                      </h3>
-                      <p className="text-lg">⭐ {restaurant.rating}/5</p>
-                    </div>
-                  )}
-                  {restaurant.noiselevel && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">
-                        Noise Level
-                      </h3>
-                      <p className="text-lg capitalize">
-                        {restaurant.noiselevel}
-                      </p>
-                    </div>
-                  )}
-                  {restaurant.privacylevel && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">
-                        Privacy Level
-                      </h3>
-                      <p className="text-lg capitalize">
-                        {restaurant.privacylevel}
-                      </p>
-                    </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
 
               {/* Restaurant Features */}
-              <RestaurantFeaturesView restaurantId={restaurant.id} />
+              <div className="rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm bg-white">
+                <RestaurantFeaturesView restaurantId={restaurant.id} />
+              </div>
 
               {/* Map View */}
               {restaurant.geoLocation?.includes("<iframe") && (
-                <Card className="overflow-hidden shadow-md border-blue-100">
-                  <CardHeader className="bg-blue-50/50">
-                    <CardTitle className="text-blue-900 flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                      Location Map
+                <Card className="overflow-hidden shadow-sm border-gray-100 rounded-[2.5rem]">
+                  <CardHeader className="bg-gray-50/50 border-b border-gray-100 px-8 py-6">
+                    <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      Spatial Coordinates
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -169,7 +170,7 @@ export default async function RestaurantViewPage({
                       dangerouslySetInnerHTML={{ 
                         __html: restaurant.geoLocation.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="450"') 
                       }} 
-                      className="w-full h-[450px] [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-none"
+                      className="w-full h-[450px] [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-none grayscale contrast-125"
                     />
                   </CardContent>
                 </Card>
@@ -177,41 +178,78 @@ export default async function RestaurantViewPage({
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
+            <div className="space-y-8">
+              <Card className="rounded-[2.5rem] border-gray-100 shadow-sm overflow-hidden bg-white">
+                <CardHeader className="bg-gray-50/50 border-b border-gray-100 px-8 py-6">
+                  <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Visibility Console</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <Link
-                    href={`/admin/restaurant-management/${restaurant.id}/edit`}
-                  >
-                    <Button className="w-full">Edit Restaurant</Button>
-                  </Link>
-                  <Link href="/admin/restaurant-management">
-                    <Button variant="outline" className="w-full">
-                      Back to List
-                    </Button>
-                  </Link>
+                <CardContent className="p-8 space-y-4">
+                  <div className={cn(
+                      "p-4 rounded-2xl border text-center space-y-2",
+                      isPublished ? "bg-green-50/50 border-green-100" : "bg-yellow-50/50 border-yellow-100"
+                  )}>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Current Status</p>
+                      <p className={cn(
+                          "text-2xl font-black uppercase tracking-tighter",
+                          isPublished ? "text-green-600" : "text-yellow-600"
+                      )}>{restaurant.status}</p>
+                  </div>
+                  
+                  <RestaurantStatusToggle id={restaurant.id} currentStatus={restaurant.status} />
+                  
+                  <p className="text-[10px] text-gray-400 font-medium text-center px-4 leading-relaxed">
+                      {isPublished 
+                        ? "This restaurant is live on the platform. Any changes are immediately visible." 
+                        : "Only administrators can see this restaurant. Publish it to make it visible to users."}
+                  </p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Metadata</CardTitle>
+              <Card className="rounded-[2.5rem] border-gray-100 shadow-sm overflow-hidden bg-white">
+                <CardHeader className="bg-gray-50/50 border-b border-gray-100 px-8 py-6">
+                  <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                    <Crosshair className="w-4 h-4" />
+                    Geospatial Data
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div>
-                    <span className="text-gray-500">ID:</span>
-                    <p className="font-mono">{restaurant.id}</p>
+                <CardContent className="p-8 space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1">Latitude</span>
+                        <p className="text-xs font-bold text-gray-600">{restaurant.latitude?.toFixed(6) || "Pending"}</p>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1">Longitude</span>
+                        <p className="text-xs font-bold text-gray-600">{restaurant.longitude?.toFixed(6) || "Pending"}</p>
+                      </div>
                   </div>
+                  
+                  <CalculateCoordinatesButton id={restaurant.id} />
+                  
+                  <p className="text-[9px] text-gray-400 font-medium text-center px-2 leading-relaxed italic">
+                    Coordinates are extracted automatically from the iframe. Use the button above to manually re-sync.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-[2.5rem] border-gray-100 shadow-sm overflow-hidden bg-white">
+                <CardHeader className="bg-gray-50/50 border-b border-gray-100 px-8 py-6">
+                  <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">System Metadata</CardTitle>
+                </CardHeader>
+                <CardContent className="p-8 space-y-6">
                   <div>
-                    <span className="text-gray-500">Created:</span>
-                    <p>{new Date(restaurant.createdAt).toLocaleString()}</p>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1">Database Reference</span>
+                    <p className="font-mono text-[10px] text-gray-400 truncate">{restaurant.id}</p>
                   </div>
-                  <div>
-                    <span className="text-gray-500">Updated:</span>
-                    <p>{new Date(restaurant.updatedAt).toLocaleString()}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1">Created At</span>
+                        <p className="text-xs font-bold text-gray-600">{new Date(restaurant.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1">Last Update</span>
+                        <p className="text-xs font-bold text-gray-600">{new Date(restaurant.updatedAt).toLocaleDateString()}</p>
+                      </div>
                   </div>
                 </CardContent>
               </Card>

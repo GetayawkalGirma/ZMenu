@@ -117,7 +117,10 @@ export async function addMenuItemToRestaurant(
 // Get restaurant menu
 export async function getRestaurantMenu(restaurantId: string) {
   try {
-    const restaurantMenu = await RestaurantMenuService.getRestaurantMenu(restaurantId);
+    const restaurantMenu = await RestaurantMenuService.getRestaurantMenu({
+      restaurantId,
+      pageSize: 100, // Load more for admin view
+    });
     return { success: true, data: restaurantMenu };
   } catch (error) {
     console.error('Failed to get restaurant menu:', error);

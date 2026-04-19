@@ -4,6 +4,7 @@ import type {
   RestaurantMenu,
   Category,
   PortionSize,
+  MenuCategory,
 } from "@/lib/types/meal";
 
 export class MenuItemRepository {
@@ -46,6 +47,7 @@ export class MenuItemRepository {
     name: string;
     description?: string;
     categoryId: string;
+    type?: MenuCategory;
     tags?: string[];
     imageId?: string | null;
   }): Promise<MenuItem> {
@@ -54,6 +56,7 @@ export class MenuItemRepository {
         name: data.name,
         description: data.description,
         categoryId: data.categoryId,
+        type: data.type,
         tags: data.tags || [],
         imageId: data.imageId,
       },
@@ -73,6 +76,7 @@ export class MenuItemRepository {
       name: string;
       description?: string;
       categoryId: string;
+      type?: MenuCategory;
       tags?: string[];
       imageId?: string | null;
     }>,
@@ -83,6 +87,7 @@ export class MenuItemRepository {
         name: data.name,
         description: data.description,
         categoryId: data.categoryId,
+        type: data.type,
         tags: data.tags,
         imageId: data.imageId,
       },
@@ -149,8 +154,25 @@ export class MenuItemRepository {
     pageSize: number;
     search?: string;
     categoryId?: string;
+    categoryNames?: string[];
+    foodCategoryTypes?: string[];
+    sortBy?: string;
+    nearMe?: boolean;
+    userLat?: number;
+    userLng?: number;
   }): Promise<{ items: MenuItem[]; total: number }> {
-    const { page, pageSize, search, categoryId } = params;
+    const {
+      page,
+      pageSize,
+      search,
+      categoryId,
+      categoryNames,
+      foodCategoryTypes,
+      sortBy,
+      nearMe,
+      userLat,
+      userLng,
+    } = params;
     const skip = (page - 1) * pageSize;
 
     const where: any = {};
@@ -167,6 +189,40 @@ export class MenuItemRepository {
       where.categoryId = categoryId;
     }
 
+    if (categoryNames && categoryNames.length > 0) {
+      where.category = {
+        name: { in: categoryNames },
+      };
+    }
+
+    if (foodCategoryTypes && foodCategoryTypes.length > 0) {
+      where.type = { in: foodCategoryTypes };
+    }
+
+    const restaurantFilters: any = {};
+    if (nearMe && userLat !== undefined && userLng !== undefined) {
+      restaurantFilters.restaurant = {
+        status: "PUBLISHED",
+        latitude: {
+          gte: userLat - 0.045,
+          lte: userLat + 0.045,
+        },
+        longitude: {
+          gte: userLng - 0.045,
+          lte: userLng + 0.045,
+        },
+      };
+    }
+
+    if (Object.keys(restaurantFilters).length > 0) {
+      where.restaurants = {
+        some: restaurantFilters,
+      };
+    }
+
+    let orderBy: any = { name: "asc" };
+    if (sortBy === "popular") orderBy = { avgPrice: "asc" };
+
     const [items, total] = await Promise.all([
       prisma.menuItem.findMany({
         where,
@@ -174,7 +230,7 @@ export class MenuItemRepository {
           category: true,
           image: true,
         },
-        orderBy: { name: "asc" },
+        orderBy,
         skip,
         take: pageSize,
       }),
@@ -283,6 +339,132 @@ export class RestaurantMenuRepository {
     });
 
     return restaurantMenu as unknown as RestaurantMenu[];
+  }
+
+  // Paginated and filtered menu items for a specific restaurant
+  static async getPaginated(params: {
+    restaurantId?: string;
+    page: number;
+    pageSize: number;
+    search?: string;
+    foodCategoryType?: string;
+    dietaryCategory?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    spicyLevel?: number;
+    portionSize?: string;
+    categoryNames?: string[];
+    sortBy?: string;
+    userLat?: number;
+    userLng?: number;
+    nearMe?: boolean;
+  }): Promise<{ items: RestaurantMenu[]; total: number }> {
+    const {
+      restaurantId,
+      page,
+      pageSize,
+      search,
+      foodCategoryType,
+      dietaryCategory,
+      minPrice,
+      maxPrice,
+      spicyLevel,
+      portionSize,
+      categoryNames,
+      sortBy,
+      userLat,
+      userLng,
+      nearMe,
+    } = params;
+    const skip = (page - 1) * pageSize;
+
+    const where: any = {};
+    if (restaurantId) {
+      where.restaurantId = restaurantId;
+    } else {
+      // Global feed: only show items from published restaurants
+      where.restaurant = {
+        status: "PUBLISHED",
+        ...(nearMe && userLat && userLng
+          ? {
+              latitude: {
+                gte: userLat - 0.045,
+                lte: userLat + 0.045,
+              },
+              longitude: {
+                gte: userLng - 0.045,
+                lte: userLng + 0.045,
+              },
+            }
+          : {}),
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { menuItem: { name: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    if (foodCategoryType && foodCategoryType !== "all") {
+      where.foodCategoryType = foodCategoryType;
+    }
+
+    if (dietaryCategory && dietaryCategory !== "all") {
+      where.dietaryCategory =
+        dietaryCategory === "fasting" ? "YETSOM" : "YEFITSIK";
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.price = {};
+      if (minPrice !== undefined) where.price.gte = minPrice;
+      if (maxPrice !== undefined) where.price.lte = maxPrice;
+    }
+
+    if (spicyLevel !== undefined && spicyLevel !== null) {
+      where.spicyLevel = spicyLevel;
+    }
+
+    if (portionSize) {
+      where.portionSize = portionSize;
+    }
+
+    if (categoryNames && categoryNames.length > 0) {
+      where.menuItem = {
+        category: {
+          name: { in: categoryNames },
+        },
+      };
+    }
+
+    let orderBy: any = { sortOrder: "asc" };
+    if (sortBy === "popular") orderBy = { isPopular: "desc" };
+    if (sortBy === "recommended") orderBy = { isRecommended: "desc" };
+    if (sortBy === "price_asc") orderBy = { price: "asc" };
+
+    const [items, total] = await Promise.all([
+      prisma.restaurantMenu.findMany({
+        where,
+        include: {
+          menuItem: {
+            include: {
+              category: true,
+              image: true,
+            },
+          },
+          image: true,
+          restaurant: true,
+        },
+        orderBy,
+        skip,
+        take: pageSize,
+      }),
+      prisma.restaurantMenu.count({ where }),
+    ]);
+
+    return { items: items as unknown as RestaurantMenu[], total };
   }
 
   // Add menu item to restaurant

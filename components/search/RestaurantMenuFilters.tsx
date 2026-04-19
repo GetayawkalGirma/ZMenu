@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Search,
   Filter,
@@ -70,8 +71,14 @@ export function RestaurantMenuFilters({
   isGlobal?: boolean;
   trigger?: React.ReactNode;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const [mounted, setMounted] = useState(false);
   const [dietary, setDietary] = useState<"all" | "fasting" | "meat">("all");
   const [nearMe, setNearMe] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("recommended");
   const [search, setSearch] = useState("");
@@ -79,6 +86,81 @@ export function RestaurantMenuFilters({
   const [selectedPortions, setSelectedPortions] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+
+  const isInitialRender = useRef(true);
+  const isSyncing = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+    isSyncing.current = true;
+    setDietary((searchParams?.get("dietary") as any) || "all");
+    setNearMe(searchParams?.get("nearMe") === "true");
+    const lat = searchParams?.get("lat");
+    const lng = searchParams?.get("lng");
+    if (lat && lng) {
+      setCoords({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    } else {
+      setCoords(null);
+    }
+    setSelectedTypes(searchParams?.get("types")?.split(",").filter(Boolean) || []);
+    setSortBy(searchParams?.get("sortBy") || "recommended");
+    setSearch(searchParams?.get("search") || "");
+    setSpicyLevel(searchParams?.get("spicy") ? parseInt(searchParams.get("spicy")!) : null);
+    setSelectedPortions(searchParams?.get("portions")?.split(",").filter(Boolean) || []);
+    setSelectedCategories(searchParams?.get("categories")?.split(",").filter(Boolean) || []);
+    setPriceRange({
+      min: searchParams?.get("minPrice") || "",
+      max: searchParams?.get("maxPrice") || "",
+    });
+
+    setTimeout(() => {
+      isSyncing.current = false;
+    }, 0);
+  }, [searchParams]);
+
+  const createQueryString = useCallback(
+    (params: Record<string, string | null>) => {
+      // Guard against null searchParams
+      const newParams = new URLSearchParams(searchParams?.toString() || "");
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === null || value === "") {
+          newParams.delete(key);
+        } else {
+          newParams.set(key, value);
+        }
+      });
+      return newParams.toString();
+    },
+    [searchParams]
+  );
+
+  useEffect(() => {
+    if (!mounted || isInitialRender.current || isSyncing.current) {
+      if (mounted) isInitialRender.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const query = createQueryString({
+        search: search || null,
+        dietary: dietary !== "all" ? dietary : null,
+        types: selectedTypes.length > 0 ? selectedTypes.join(",") : null,
+        categories: selectedCategories.length > 0 ? selectedCategories.join(",") : null,
+        portions: selectedPortions.length > 0 ? selectedPortions.join(",") : null,
+        sortBy: sortBy !== "recommended" ? sortBy : null,
+        spicy: spicyLevel !== null ? spicyLevel.toString() : null,
+        minPrice: priceRange.min || null,
+        maxPrice: priceRange.max || null,
+        nearMe: nearMe ? "true" : null,
+        lat: nearMe && coords ? coords.lat.toString() : null,
+        lng: nearMe && coords ? coords.lng.toString() : null,
+        page: "1",
+      });
+      router.push(`${pathname}?${query}`, { scroll: false });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search, dietary, selectedTypes, selectedCategories, selectedPortions, sortBy, spicyLevel, priceRange, nearMe, coords, pathname, router, createQueryString, mounted]);
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories((prev) =>
@@ -98,69 +180,84 @@ export function RestaurantMenuFilters({
     );
   };
 
+  const handleNearMeToggle = (checked: boolean) => {
+    if (checked) {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setCoords({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+            setNearMe(true);
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            alert("Could not get your location. Please enable location services.");
+            setNearMe(false);
+          }
+        );
+      } else {
+        alert("Geolocation is not supported by your browser.");
+        setNearMe(false);
+      }
+    } else {
+      setNearMe(false);
+      setCoords(null);
+    }
+  };
+
   const FilterContent = () => (
     <div className="space-y-8">
       {/* Search & Location Hub */}
       <div className="space-y-4">
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-          <Input
-            placeholder="Search this menu..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-12 h-14 bg-gray-50 border-gray-100 rounded-2xl focus:ring-blue-600 transition-all text-sm font-medium"
-          />
-        </div>
-
-        {isGlobal && (
-          <label
-            className={cn(
-              "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group",
-              nearMe
-                ? "bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-100"
-                : "bg-white border-gray-100 hover:border-gray-200",
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <div
+        <label
+          className={cn(
+            "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group",
+            nearMe
+              ? "bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-100"
+              : "bg-white border-gray-100 hover:border-gray-200",
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                nearMe ? "bg-white/20" : "bg-indigo-50",
+              )}
+            >
+              <MapPin
                 className={cn(
-                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
-                  nearMe ? "bg-white/20" : "bg-indigo-50",
+                  "w-4 h-4",
+                  nearMe ? "text-white" : "text-indigo-600",
+                )}
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                Near Me
+              </span>
+              <span
+                className={cn(
+                  "text-[8px] font-bold uppercase tracking-tight mt-1",
+                  nearMe ? "text-indigo-100" : "text-gray-400",
                 )}
               >
-                <MapPin
-                  className={cn(
-                    "w-4 h-4",
-                    nearMe ? "text-white" : "text-indigo-600",
-                  )}
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-                  Near Me
-                </span>
-                <span
-                  className={cn(
-                    "text-[8px] font-bold uppercase tracking-tight mt-1",
-                    nearMe ? "text-indigo-100" : "text-gray-400",
-                  )}
-                >
-                  Show closest results
-                </span>
-              </div>
+                Show closest results
+              </span>
             </div>
-            <Checkbox
-              checked={nearMe}
-              onCheckedChange={(val) => setNearMe(!!val)}
-              className={cn(
-                "border-2",
-                nearMe
-                  ? "border-white data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
-                  : "border-gray-200",
-              )}
-            />
-          </label>
-        )}
+          </div>
+          <Checkbox
+            checked={nearMe}
+            onCheckedChange={handleNearMeToggle}
+            className={cn(
+              "border-2",
+              nearMe
+                ? "border-white data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
+                : "border-gray-200",
+            )}
+          />
+        </label>
       </div>
 
       {/* Triple State Fasting Switch */}
@@ -440,6 +537,12 @@ export function RestaurantMenuFilters({
       </div>
     </div>
   );
+
+  if (!mounted) {
+    return (
+      <div className="w-full p-8 bg-white rounded-[2.5rem] border border-gray-100 h-[600px] animate-pulse" />
+    );
+  }
 
   return (
     <>

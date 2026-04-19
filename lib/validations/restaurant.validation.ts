@@ -25,6 +25,8 @@ export const createRestaurantSchema = z.object({
   removeMenuImage: z.boolean().optional(),
   logoId: z.string().optional(),
   menuImageId: z.string().optional(),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
 });
 
 export const updateRestaurantSchema = createRestaurantSchema.partial();

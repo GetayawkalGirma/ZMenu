@@ -6,7 +6,7 @@ enum DietaryCategory {
   YETSOM
   YEFITSIK
 
-  @@schema("menu")
+  @@schema("public")
 }
 
 enum FoodCategoryType {
@@ -14,7 +14,15 @@ enum FoodCategoryType {
   DRINK
   EXTRA
 
-  @@schema("menu")
+  @@schema("public")
+}
+
+enum MenuCategory {
+  MEAL
+  DRINK
+  SIDES
+
+  @@schema("public")
 }
 
 enum PortionSize {
@@ -23,7 +31,7 @@ enum PortionSize {
   THREE_PEOPLE
   FAMILY
 
-  @@schema("menu")
+  @@schema("public")
 }
 
 // =========================
@@ -57,6 +65,8 @@ model MenuItem {
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
+
+  type MenuCategory?
 
   tags String[] // ["fast-food", "ethiopian", "popular"]
 

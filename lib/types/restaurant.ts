@@ -7,6 +7,9 @@ export interface Restaurant {
   menuImageUrl?: string | null;
   menuImageId?: string | null;
   features: RestaurantFeatures;
+  status: string;
+  latitude?: number | null;
+  longitude?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,8 +33,11 @@ export interface RestaurantFormData {
     privacyLevel: PrivacyLevel;
   };
   menuImage?: File;
+  status?: "DRAFT" | "PUBLISHED";
   removeLogo?: boolean;
   removeMenuImage?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export enum NoiseLevel {

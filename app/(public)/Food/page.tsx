@@ -1,117 +1,144 @@
 import { RestaurantMenuService } from "@/services/menu-item/menu-item.service";
-import { SuperFoodCard } from "@/components/meal/SuperFoodCard";
-import { FoodGridSkeleton } from "@/components/meal/SuperFoodCardSkeleton";
 import { RestaurantMenuFilters } from "@/components/search/RestaurantMenuFilters";
-import { Utensils, LayoutGrid, Search, Filter } from "lucide-react";
+import { MainSearchBar } from "@/components/search/MainSearchBar";
+import { Sparkles, Utensils, Filter } from "lucide-react";
 import { Button } from "@/components/ui";
+import { FoodGridSkeleton } from "@/components/meal/SuperFoodCardSkeleton";
 import { Suspense } from "react";
+import { RestaurantMenuInfinite } from "@/components/restaurant/RestaurantMenuInfinite";
 
-export const revalidate = 3600; // Cache for 1 hour
+export const revalidate = 0; // Disable static caching for real-time discovery
 
-async function FoodList() {
-  const foods = await RestaurantMenuService.getAllRestaurantMenus();
-  
+async function FoodList({ searchParams }: { searchParams: any }) {
+  const params = await searchParams;
+  const categories = params.categories?.split(",").filter(Boolean);
+  const types = params.types?.split(",").filter(Boolean);
+  const search = params.search;
+  const portions = params.portions?.split(",").filter(Boolean);
+  const dietary = params.dietary;
+  const spicy = params.spicy ? parseInt(params.spicy as string) : undefined;
+  const minPrice = params.minPrice ? parseFloat(params.minPrice as string) : undefined;
+  const maxPrice = params.maxPrice ? parseFloat(params.maxPrice as string) : undefined;
+  const nearMe = params.nearMe === "true";
+  const userLat = params.lat ? parseFloat(params.lat as string) : undefined;
+  const userLng = params.lng ? parseFloat(params.lng as string) : undefined;
+
+  const result = await RestaurantMenuService.getRestaurantMenu({
+    page: 1,
+    pageSize: 6, // Show 6 items as requested
+    search,
+    categoryNames: categories,
+    foodCategoryType: types?.[0], // Filter by food category type
+    portionSize: portions?.[0], // Pass portion filter
+    dietaryCategory: dietary,
+    spicyLevel: spicy,
+    minPrice,
+    maxPrice,
+    sortBy: "recommended",
+    nearMe,
+    userLat,
+    userLng,
+  });
+
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-6 md:gap-8">
-      {foods.length > 0 ? (
-        foods.map((item: any) => (
-          <SuperFoodCard key={item.id} item={item} />
-        ))
-      ) : (
-        <div className="col-span-full py-20 sm:py-32 text-center bg-gray-50 rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100 flex flex-col items-center">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-xl">
-             <Utensils className="w-6 h-6 sm:w-8 sm:h-8 text-gray-200" />
-          </div>
-          <p className="text-sm sm:text-lg text-gray-400 font-black uppercase tracking-tighter">No delicacies found.</p>
-        </div>
-      )}
-    </div>
+    <RestaurantMenuInfinite 
+      restaurantId=""
+      initialItems={result.items}
+      initialTotal={result.total}
+      restaurant={null}
+    />
   );
 }
 
-export default async function FoodDiscoveryPage() {
+export default async function FoodDiscoveryPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> 
+}) {
   return (
-    <div className="bg-white min-h-screen">
-      {/* Premium Discovery Header */}
-      <div className="bg-white border-b border-gray-100 relative overflow-hidden">
-        {/* Subtle Light Accents */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-50/50 rounded-full blur-[100px] -mr-48 -mt-48" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-50/50 rounded-full blur-[100px] -ml-48 -mb-48" />
+    <div className="min-h-screen bg-gray-50/30">
+      {/* Hero Section - Premium Modern Aesthetic */}
+      <section className="relative bg-white pt-10 pb-20 sm:pt-20 sm:pb-32 overflow-hidden border-b border-gray-100 px-4 text-center sm:text-left">
+        <div className="absolute top-0 right-0 w-full h-full opacity-5 pointer-events-none">
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600 rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full blur-[100px]" />
         </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-16 relative z-10 text-center sm:text-left">
-          <div className="max-w-3xl space-y-4 sm:space-y-6 mx-auto sm:mx-0">
-            <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 bg-blue-50 text-blue-600 text-[8px] sm:text-[10px] font-black rounded-full uppercase tracking-[0.2em] sm:tracking-[0.3em] shadow-sm">
-              <Utensils className="w-3 h-3 sm:w-3.5 h-3.5" /> Global Menu Feed
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-10">
+            <div className="max-w-3xl space-y-4 sm:space-y-6">
+                <div className="inline-flex items-center space-x-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
+                <Sparkles className="w-3 h-3" />
+                <span>Culinary Discovery</span>
+                </div>
+                <h1 className="text-3xl sm:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-4 uppercase">
+                Find Your <br className="hidden sm:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600 uppercase">Next Craving.</span>
+                </h1>
+                <p className="text-sm sm:text-lg text-gray-400 font-medium max-w-xl leading-relaxed italic mx-auto sm:mx-0">
+                The city's entire menu, indexed for you. Filter by portion, category, or restaurant type.
+                </p>
             </div>
-            <h1 className="text-3xl sm:text-6xl font-black text-gray-900 tracking-tighter leading-none uppercase">
-              What Do You <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                Want To Eat?
-              </span>
-            </h1>
-            <p className="text-sm sm:text-lg text-gray-400 font-medium leading-relaxed italic max-w-xl mx-auto sm:mx-0">
-               Explore every dish in the city with real-time pricing and visual listings.
-            </p>
+
+            <div className="w-full md:w-auto pb-4">
+               <div className="bg-white p-2 rounded-[2rem] shadow-2xl shadow-indigo-100 border border-indigo-50 flex items-center group focus-within:ring-4 focus-within:ring-indigo-50 transition-all">
+                  <MainSearchBar 
+                    placeholder="Search dishes..." 
+                    className="w-full md:w-80 lg:w-96"
+                  />
+                  <Button size="lg" className="hidden sm:inline-flex bg-indigo-600 hover:bg-indigo-700 rounded-2xl px-10 h-14 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-200">
+                    Find
+                  </Button>
+               </div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Main Discovery Section */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-10">
+      {/* Main Content Layout */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 -mt-10 sm:-mt-16 pb-20 sm:pb-32">
         <div className="flex flex-col lg:flex-row gap-6 sm:gap-12">
-          
-          {/* Persistent Desktop Sidebar */}
+          {/* Sidebar Filters */}
           <div className="hidden lg:block w-80 shrink-0">
-            <RestaurantMenuFilters isGlobal={true} />
+            <div className="sticky top-24">
+               <RestaurantMenuFilters isGlobal={true} />
+            </div>
           </div>
 
+          {/* Results Area */}
           <div className="flex-1 space-y-6 sm:space-y-10">
-            {/* Filter Hub Strip */}
-            <div className="flex items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-gray-100">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <h2 className="text-xs sm:text-xl font-black text-gray-900 uppercase tracking-tighter flex items-center gap-2">
-                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                  Index
-                </h2>
-                <div className="h-4 w-px bg-gray-100 hidden sm:block" />
-                <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest hidden xs:block">
-                  Live Menu
-                </span>
+            {/* Control Bar */}
+            <div className="flex items-center justify-between bg-white/50 backdrop-blur-md p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-white/50 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-widest">
+                  Live Index
+                </div>
+                
+                {/* Mobile Filter Trigger */}
+                <div className="lg:hidden">
+                  <RestaurantMenuFilters 
+                    isGlobal={true}
+                    trigger={
+                      <Button variant="outline" className="h-8 px-3 rounded-lg border-gray-100 bg-white shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-all text-[8px] font-black uppercase tracking-widest">
+                        <Filter className="w-3.5 h-3.5 text-indigo-600" />
+                        Filters
+                      </Button>
+                    } 
+                  />
+                </div>
               </div>
 
-                <div className="relative flex items-center gap-2">
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      placeholder="Find..." 
-                      className="w-28 sm:w-64 h-9 sm:h-11 bg-gray-50 border border-transparent rounded-lg sm:rounded-xl px-8 sm:px-10 text-[10px] sm:text-xs font-bold tracking-tight focus:bg-white focus:border-blue-600 transition-all outline-none shadow-sm"
-                    />
-                    <Search className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-300 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2" />
-                  </div>
-                  
-                  {/* Mobile-Visible Filter Trigger */}
-                  <div className="lg:hidden">
-                    <RestaurantMenuFilters 
-                      isGlobal={true} 
-                      trigger={
-                        <Button variant="outline" className="h-9 w-9 p-0 rounded-lg border-gray-100 bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition-all">
-                          <Filter className="w-4 h-4 text-gray-600" />
-                        </Button>
-                      } 
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 text-[8px] sm:text-[10px] font-black uppercase text-gray-400">
+                <span className="hidden xs:inline">Sorted by</span> <span className="text-indigo-600">Relevance</span>
+              </div>
             </div>
 
-            {/* The Ultimate Super Grid - High Density Mobile First */}
-            <Suspense fallback={<FoodGridSkeleton count={12} />}>
-              <FoodList />
+            <Suspense fallback={<FoodGridSkeleton count={6} />}>
+              <FoodList searchParams={searchParams} />
             </Suspense>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

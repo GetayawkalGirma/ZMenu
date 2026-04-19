@@ -44,11 +44,16 @@ export class RestaurantService {
         menuImageId = uploadedFile.id;
       }
 
+      // Extract coordinates from geoLocation iframe
+      const coords = this.extractCoordinates(data.geoLocation);
+
       // No validation - just business logic
       const restaurant = await RestaurantRepository.create({
         ...data,
         logoId,
         menuImageId,
+        latitude: coords?.lat,
+        longitude: coords?.lng,
       } as any);
 
       // Hydrate URLs
@@ -110,11 +115,16 @@ export class RestaurantService {
         menuImageId = null;
       }
 
+      // Extract coordinates from geoLocation iframe
+      const coords = this.extractCoordinates(data.geoLocation);
+
       // No validation - just business logic
       const restaurant = await RestaurantRepository.update(id, {
         ...data,
         logoId: logoId === null ? null : (logoId ?? existing?.logoId),
         menuImageId: menuImageId === null ? null : (menuImageId ?? existing?.menuImageId),
+        latitude: coords?.lat ?? existing?.latitude,
+        longitude: coords?.lng ?? existing?.longitude,
       } as any);
 
       // Hydrate URLs
@@ -185,12 +195,18 @@ export class RestaurantService {
     }
   }
 
-  // Get paginated restaurants with search/filter
+  // Get paginated restaurants with advanced search/filter
   static async getRestaurantsPaginated(params: {
     page: number;
     pageSize: number;
     search?: string;
     status?: string;
+    categoryNames?: string[];
+    featureNames?: string[];
+    sortBy?: string;
+    userLat?: number;
+    userLng?: number;
+    nearMe?: boolean;
   }): Promise<ServiceResult<{ items: Restaurant[]; total: number; totalPages: number }>> {
     try {
       const { items, total } = await RestaurantRepository.getPaginated(params);
@@ -331,5 +347,19 @@ export class RestaurantService {
             : "Failed to search restaurants",
       };
     }
+  }
+
+  private static extractCoordinates(iframe: string | null | undefined): { lat: number, lng: number } | null {
+    if (!iframe) return null;
+    // Regex for Google Maps iframe src or raw pb string
+    // Looks for !2d[LNG]!3d[LAT]
+    const match = iframe.match(/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/);
+    if (match) {
+      return {
+        lng: parseFloat(match[1]),
+        lat: parseFloat(match[2]),
+      };
+    }
+    return null;
   }
 }

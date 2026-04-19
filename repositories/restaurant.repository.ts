@@ -9,6 +9,8 @@ export interface Restaurant {
   name: string | null;
   location: string | null;
   geoLocation: string | null;
+  latitude: number | null;
+  longitude: number | null;
   logoUrl: string | null;
   logoId: string | null;
   menuImageUrl: string | null;
@@ -37,6 +39,8 @@ export class RestaurantRepository {
         noiselevel: data.noiselevel || null,
         privacylevel: data.privacylevel || null,
         status: data.status || "DRAFT",
+        latitude: (data as any).latitude,
+        longitude: (data as any).longitude,
         features:
           data.featureIds && data.featureIds.length > 0
             ? {
@@ -70,6 +74,8 @@ export class RestaurantRepository {
         noiselevel: data.noiselevel || null,
         privacylevel: data.privacylevel || null,
         status: data.status,
+        latitude: (data as any).latitude,
+        longitude: (data as any).longitude,
         features: data.featureIds
           ? {
               deleteMany: {},
@@ -148,25 +154,84 @@ export class RestaurantRepository {
     return restaurant;
   }
 
-  // Paginated restaurants with search and status filter
+  // Paginated restaurants with search, status, categories, features, and sorting
   static async getPaginated(params: {
     page: number;
     pageSize: number;
     search?: string;
     status?: string;
+    categoryNames?: string[];
+    featureNames?: string[];
+    sortBy?: string;
+    userLat?: number;
+    userLng?: number;
+    nearMe?: boolean;
   }): Promise<{ items: Restaurant[]; total: number }> {
-    const { page, pageSize, search, status } = params;
+    const { page, pageSize, search, status, categoryNames, featureNames, sortBy, userLat, userLng, nearMe } = params;
     const skip = (page - 1) * pageSize;
 
     const where: any = {};
+    
+    // Proximity filter (Bounding Box ~5km)
+    if (nearMe && userLat && userLng) {
+      const latRange = 0.045; // ~5km
+      const lngRange = 0.045;
+      where.latitude = {
+        gte: userLat - latRange,
+        lte: userLat + latRange,
+      };
+      where.longitude = {
+        gte: userLng - lngRange,
+        lte: userLng + lngRange,
+      };
+    }
+
+    // Search filter
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { location: { contains: search, mode: "insensitive" } },
       ];
     }
+    
+    // Status filter
     if (status) {
       where.status = status;
+    }
+
+    // Category filter (via MenuItems -> Category)
+    if (categoryNames && categoryNames.length > 0) {
+      where.menuItems = {
+        some: {
+          menuItem: {
+            category: {
+              name: { in: categoryNames }
+            }
+          }
+        }
+      };
+    }
+
+    // Feature filter
+    if (featureNames && featureNames.length > 0) {
+      where.features = {
+        some: {
+          feature: {
+            name: { in: featureNames }
+          }
+        }
+      };
+    }
+
+    // Sorting logic
+    let orderBy: any = { createdAt: "desc" };
+    if (sortBy === "recommended") {
+      orderBy = { rating: "desc" };
+    } else if (sortBy === "popular") {
+      orderBy = [
+        { rating: "desc" },
+        { createdAt: "desc" }
+      ];
     }
 
     const [items, total] = await Promise.all([
@@ -182,14 +247,14 @@ export class RestaurantRepository {
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: pageSize,
       }),
       prisma.restaurant.count({ where }),
     ]);
 
-    return { items: items as unknown as Restaurant[], total };
+    return { items: items as any as Restaurant[], total };
   }
 
   // Search restaurants

@@ -2,44 +2,48 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
 import { UtensilsCrossed, TrendingUp, Search, Filter } from "lucide-react";
-import { RestaurantCard } from "@/components/restaurant/RestaurantCard";
 import { RestaurantFilters } from "@/components/search/RestaurantFilters";
+import { MainSearchBar } from "@/components/search/MainSearchBar";
 import { RestaurantGridSkeleton } from "@/components/restaurant/RestaurantCardSkeleton";
 import { Suspense } from "react";
+import { RestaurantListInfinite } from "@/components/restaurant/RestaurantListInfinite";
 
-export const revalidate = 3600; // Cache for 1 hour
+export const revalidate = 0; // Disable static caching for real-time filters
 
-async function RestaurantList() {
-  const result = await RestaurantService.getAllRestaurants();
-  const restaurants: any[] = result.success ? result.data || [] : [];
-  
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
-      {restaurants.length > 0 ? (
-        restaurants.map((restaurant) => (
-          <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-        ))
-      ) : (
-        <div className="col-span-full py-20 text-center bg-white rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100 p-8">
-           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <UtensilsCrossed className="w-8 h-8 sm:w-10 sm:h-10 text-gray-200" />
-           </div>
-           <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Quiet Directory</h3>
-           <p className="text-gray-400 font-medium text-xs sm:text-sm max-w-xs mx-auto mb-8">
-              Be the pioneer. Add the first restaurant.
-           </p>
-           <Link href="/admin/restaurant-management/new">
-              <Button className="rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[9px] bg-blue-600 shadow-xl shadow-blue-100 hover:bg-black transition-all">
-                Initialize
-              </Button>
-           </Link>
-        </div>
-      )}
-    </div>
-  );
+async function RestaurantList({ searchParams }: { searchParams: any }) {
+  const params = await searchParams;
+  const categories = params.categories?.split(",").filter(Boolean);
+  const features = params.features?.split(",").filter(Boolean);
+  const search = params.search;
+  const sortBy = params.sortBy;
+  const nearMe = params.nearMe === "true";
+  const userLat = params.lat ? parseFloat(params.lat as string) : undefined;
+  const userLng = params.lng ? parseFloat(params.lng as string) : undefined;
+
+  const result = await RestaurantService.getRestaurantsPaginated({
+    page: 1,
+    pageSize: 6, // 6 items as requested
+    search,
+    categoryNames: categories,
+    featureNames: features,
+    sortBy,
+    status: "PUBLISHED",
+    nearMe,
+    userLat,
+    userLng,
+  });
+
+  const items = result.success ? result.data?.items || [] : [];
+  const total = result.success ? result.data?.total || 0 : 0;
+
+  return <RestaurantListInfinite initialItems={items} initialTotal={total} />;
 }
 
-export default async function RestaurantsPage() {
+export default async function RestaurantsPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> 
+}) {
   return (
     <div className="bg-white min-h-screen">
       {/* Search & Discover Hero - Premium Aesthetic */}
@@ -70,13 +74,9 @@ export default async function RestaurantsPage() {
             <div className="w-full md:w-auto pb-4">
               <div className="flex items-center gap-2">
                 <div className="bg-white p-1.5 sm:p-2 flex-1 rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl shadow-blue-100 border border-gray-100 flex items-center group focus-within:ring-4 focus-within:ring-blue-50 transition-all">
-                  <div className="pl-3 sm:pl-4 text-gray-400">
-                     <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Find..."
-                    className="pl-2 sm:pl-3 pr-4 sm:pr-10 py-3 sm:py-4 bg-transparent focus:outline-none w-full md:w-64 font-bold text-xs sm:text-sm text-gray-900 placeholder:text-gray-300"
+                  <MainSearchBar 
+                    placeholder="Find restaurant..." 
+                    className="w-full md:w-80 lg:w-96"
                   />
                   <Button size="sm" className="hidden sm:inline-flex bg-gray-900 hover:bg-black rounded-lg sm:rounded-xl px-6 sm:px-8 h-10 sm:h-12 font-black uppercase tracking-widest text-[8px] sm:text-[10px] shadow-lg">
                     Explore
@@ -125,8 +125,8 @@ export default async function RestaurantsPage() {
               </div>
             </div>
 
-            <Suspense fallback={<RestaurantGridSkeleton count={8} />}>
-               <RestaurantList />
+            <Suspense fallback={<RestaurantGridSkeleton count={6} />}>
+               <RestaurantList searchParams={searchParams} />
             </Suspense>
           </div>
         </div>

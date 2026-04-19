@@ -1,112 +1,133 @@
 import { MenuItemFilters } from "@/components/search/MenuItemFilters";
-import { MealCard } from "@/components/meal/MealCard";
-import { Sparkles, Utensils, Filter } from "lucide-react";
 import { MenuItemService } from "@/services/menu-item/menu-item.service";
+import { SearchMealInfinite } from "./SearchMealInfinite";
 import { Button } from "@/components/ui";
-import { FoodGridSkeleton } from "@/components/meal/SuperFoodCardSkeleton";
-import { Suspense } from "react";
+import { Filter } from "lucide-react";
+import { MainSearchBar } from "@/components/search/MainSearchBar";
 
-export const revalidate = 60; // Cache search results for 1 minute
+export const revalidate = 0;
+const PAGE_SIZE = 9;
 
-async function SearchList() {
-  const menuItems = await MenuItemService.getAllMenuItems();
-  
-  return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-8 overflow-hidden">
-      {menuItems.length > 0 ? (
-        menuItems.map((meal: any) => (
-          <MealCard key={meal.id} meal={meal} showActions={false} />
-        ))
-      ) : (
-        <div className="col-span-full py-20 flex flex-col items-center justify-center bg-white rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-gray-100">
-          <Utensils className="w-10 h-10 sm:w-16 sm:h-16 mb-4 sm:mb-6 text-gray-100" />
-          <p className="text-xs sm:text-lg text-gray-400 font-black uppercase tracking-tighter text-center">No match found.</p>
-        </div>
-      )}
-    </div>
-  );
+function normalizeParam(param: string | string[] | undefined) {
+  return Array.isArray(param) ? param[0] : param;
 }
 
-export default async function SearchPage() {
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const search = normalizeParam(params.search) || normalizeParam(params.q);
+  const categoriesParam = normalizeParam(params.categories);
+  const categories = categoriesParam
+    ? categoriesParam.split(",").filter(Boolean)
+    : [];
+  const typesParam = normalizeParam(params.types);
+  const types = typesParam ? typesParam.split(",").filter(Boolean) : [];
+  const nearMe = normalizeParam(params.nearMe) === "true";
+  const userLat = params.lat
+    ? parseFloat(normalizeParam(params.lat) || "")
+    : undefined;
+  const userLng = params.lng
+    ? parseFloat(normalizeParam(params.lng) || "")
+    : undefined;
+
+  const mealResult = await MenuItemService.getMenuItemsPaginated({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    search: search || undefined,
+    categoryNames: categories.length > 0 ? categories : undefined,
+    foodCategoryTypes: types.length > 0 ? types : undefined,
+    nearMe,
+    userLat,
+    userLng,
+  });
+
+  const meals = mealResult.items;
+  const totalMeals = mealResult.total;
+
   return (
     <div className="min-h-screen bg-gray-50/30">
-      {/* Search Hero Section */}
       <section className="relative bg-white pt-10 pb-20 sm:pt-20 sm:pb-32 overflow-hidden border-b border-gray-100 px-4 text-center sm:text-left">
         <div className="absolute top-0 right-0 w-full h-full opacity-5 pointer-events-none">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600 rounded-full blur-[120px]" />
           <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full blur-[100px]" />
         </div>
-        
+
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="max-w-3xl space-y-4 sm:space-y-6 mx-auto sm:mx-0">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
-              <Sparkles className="w-3 h-3" />
-              <span>Discover Great Tastes</span>
+          <div className="flex flex-col md:flex-row justify-between items-end gap-10">
+            <div className="max-w-3xl space-y-4 sm:space-y-6 mx-auto sm:mx-0 text-center sm:text-left">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
+                <span>Discover Meals</span>
+              </div>
+              <h1 className="text-3xl sm:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-4 uppercase">
+                Search meals <br className="hidden sm:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600 uppercase">
+                  from every kitchen
+                </span>
+              </h1>
+              <p className="text-sm sm:text-lg text-gray-400 font-medium max-w-xl leading-relaxed italic mx-auto sm:mx-0">
+                What do you feel like eating today?
+              </p>
             </div>
-            <h1 className="text-3xl sm:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-4 uppercase">
-              Crave it. <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600 uppercase">Find it.</span>
-            </h1>
-            <p className="text-sm sm:text-lg text-gray-400 font-medium max-w-xl leading-relaxed italic mx-auto sm:mx-0">
-               Explore every dish in the city. Filter by diet, heat level, or value.
-            </p>
+
+            <div className="w-full md:w-auto pb-4">
+               <div className="flex items-center gap-2">
+                  <div className="bg-white p-2 flex-1 rounded-[2rem] shadow-2xl shadow-indigo-100 border border-indigo-50 flex items-center group focus-within:ring-4 focus-within:ring-indigo-50 transition-all">
+                     <MainSearchBar 
+                       placeholder="Search dishes..." 
+                       className="w-full md:w-80 lg:w-96"
+                     />
+                     <Button size="lg" className="hidden sm:inline-flex bg-indigo-600 hover:bg-indigo-700 rounded-2xl px-10 h-14 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-200">
+                       Find
+                     </Button>
+                  </div>
+                  
+                  {/* Mobile Filter Trigger */}
+                  <div className="lg:hidden">
+                    <MenuItemFilters
+                      trigger={
+                        <Button
+                          variant="outline"
+                          className="h-12 w-12 sm:h-14 sm:w-14 p-0 rounded-2xl border-gray-100 bg-white shadow-xl shadow-indigo-50 flex items-center justify-center hover:bg-gray-50 transition-all"
+                        >
+                          <Filter className="w-5 h-5 text-indigo-600" />
+                        </Button>
+                      }
+                    />
+                  </div>
+               </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Main Search Layout */}
       <section className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 -mt-10 sm:-mt-16 pb-20 sm:pb-32">
         <div className="flex flex-col lg:flex-row gap-6 sm:gap-12">
-          {/* Sidebar Filters */}
           <div className="hidden lg:block w-80 shrink-0">
-            <MenuItemFilters />
+            <div className="sticky top-24">
+              <MenuItemFilters />
+            </div>
           </div>
 
-          {/* Results Area */}
           <div className="flex-1 space-y-6 sm:space-y-10">
             <div className="flex items-center justify-between bg-white/50 backdrop-blur-md p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-white/50 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-widest">
-                  Live Index
-                </div>
-                
-                {/* Mobile Filter Trigger */}
-                <div className="lg:hidden">
-                  <MenuItemFilters 
-                    trigger={
-                      <Button variant="outline" className="h-8 px-3 rounded-lg border-gray-100 bg-white shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-all text-[8px] font-black uppercase tracking-widest">
-                        <Filter className="w-3.5 h-3.5 text-indigo-600" />
-                        Filters
-                      </Button>
-                    } 
-                  />
+                  Meal Results
                 </div>
               </div>
-
               <div className="flex items-center gap-2 text-[8px] sm:text-[10px] font-black uppercase text-gray-400">
-                <span className="hidden xs:inline">Sorted by</span> <span className="text-indigo-600">Relevance</span>
+                <span className="hidden xs:inline">Sorted by</span>{" "}
+                <span className="text-indigo-600">Relevance</span>
               </div>
             </div>
 
-            <Suspense fallback={<FoodGridSkeleton count={15} />}>
-              <SearchList />
-            </Suspense>
-
-            {/* Pagination Placeholder */}
-            <div className="pt-8 flex justify-center">
-                <div className="flex gap-2">
-                  {[1, 2, 3].map(page => (
-                    <button 
-                      key={page}
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs transition-all ${
-                        page === 1 ? "bg-gray-900 text-white shadow-xl" : "bg-white text-gray-400 hover:bg-gray-50 border border-gray-100"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-            </div>
+            <SearchMealInfinite
+              initialItems={meals}
+              initialTotal={totalMeals}
+            />
           </div>
         </div>
       </section>
