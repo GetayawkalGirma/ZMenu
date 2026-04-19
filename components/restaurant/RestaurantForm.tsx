@@ -15,6 +15,8 @@ import {
   NoiseLevel,
   PrivacyLevel,
 } from "@/lib/types/restaurant";
+import { cn } from "@/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
 
 interface RestaurantFormProps {
   mode: "create" | "edit";
@@ -42,12 +44,15 @@ export function RestaurantForm({
     name: initialData?.name || "",
     location: initialData?.location || "",
     geoLocation: initialData?.geoLocation || "",
+    status: initialData?.status || "DRAFT",
     features: {
       isLuxury: initialData?.features?.isLuxury || false,
       isGrabAndGo: initialData?.features?.isGrabAndGo || false,
       noiseLevel: initialData?.features?.noiseLevel || NoiseLevel.MODERATE,
       privacyLevel: initialData?.features?.privacyLevel || PrivacyLevel.PUBLIC,
     },
+    latitude: initialData?.latitude || undefined,
+    longitude: initialData?.longitude || undefined,
   });
 
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>(initialFeatureIds || []);
@@ -90,8 +95,7 @@ export function RestaurantForm({
 
     // Validate file
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    const maxSizeMB = 5;
-
+    
     if (!allowedTypes.includes(file.type)) {
       setErrors((prev) => ({
         ...prev,
@@ -112,7 +116,6 @@ export function RestaurantForm({
 
     // Validate file
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    const maxSizeMB = 5;
 
     if (!allowedTypes.includes(file.type)) {
       setErrors((prev) => ({
@@ -174,6 +177,13 @@ export function RestaurantForm({
     onSubmit(submitData);
   };
 
+  const toggleStatus = () => {
+    setFormData(prev => ({
+      ...prev,
+      status: prev.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED"
+    }));
+  };
+
   return (
     <div className="w-full">
       <div className="mb-6">
@@ -188,6 +198,52 @@ export function RestaurantForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Status Section */}
+        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    formData.status === "PUBLISHED" ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"
+                )}>
+                    {formData.status === "PUBLISHED" ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Publication Status</h3>
+                    <p className="text-xs text-gray-500">
+                        {formData.status === "PUBLISHED" 
+                            ? "Currently visible to all public users." 
+                            : "Currently hidden from search results."}
+                    </p>
+                </div>
+            </div>
+            <div className="flex bg-white border border-gray-200 rounded-lg p-1">
+                <button
+                    type="button"
+                    onClick={() => handleInputChange("status", "DRAFT")}
+                    className={cn(
+                        "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all",
+                        formData.status === "DRAFT" 
+                            ? "bg-yellow-500 text-white shadow-sm" 
+                            : "text-gray-400 hover:text-gray-600"
+                    )}
+                >
+                    Draft
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleInputChange("status", "PUBLISHED")}
+                    className={cn(
+                        "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all",
+                        formData.status === "PUBLISHED" 
+                            ? "bg-green-600 text-white shadow-sm" 
+                            : "text-gray-400 hover:text-gray-600"
+                    )}
+                >
+                    Published
+                </button>
+            </div>
+        </div>
+
         {/* Basic Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -215,6 +271,28 @@ export function RestaurantForm({
             onChange={(e) => handleInputChange("geoLocation", e.target.value)}
             error={errors.geoLocation}
             placeholder="Paste Google Maps link, coordinates, or <iframe> embed code"
+          />
+        </div>
+ 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Latitude Override"
+            type="number"
+            step="any"
+            value={formData.latitude}
+            onChange={(e) => handleInputChange("latitude", e.target.value ? parseFloat(e.target.value) : undefined)}
+            error={errors.latitude}
+            placeholder="e.g. 9.012345"
+          />
+ 
+          <Input
+            label="Longitude Override"
+            type="number"
+            step="any"
+            value={formData.longitude}
+            onChange={(e) => handleInputChange("longitude", e.target.value ? parseFloat(e.target.value) : undefined)}
+            error={errors.longitude}
+            placeholder="e.g. 38.765432"
           />
         </div>
 

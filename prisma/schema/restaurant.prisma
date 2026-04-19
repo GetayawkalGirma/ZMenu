@@ -7,6 +7,8 @@ model Restaurant {
   name         String?
   location     String?
   geoLocation  String?
+  latitude     Float?
+  longitude    Float?
   logoUrl      String?
   logoId       String?
   logo         File?   @relation("RestaurantLogo", fields: [logoId], references: [id])

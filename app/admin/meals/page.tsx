@@ -18,7 +18,10 @@ import {
 import type { MenuItem, Category } from "@/lib/types/meal";
 import { MenuItemCard } from "@/components/meal/MenuItemCard";
 import { MenuItemForm } from "@/components/meal/MenuItemForm";
-import { SearchFilterBar, type FilterConfig } from "@/components/shared/SearchFilterBar";
+import {
+  SearchFilterBar,
+  type FilterConfig,
+} from "@/components/shared/SearchFilterBar";
 import { Pagination } from "@/components/shared/Pagination";
 
 const PAGE_SIZE = 12;
@@ -93,7 +96,11 @@ export default function MealsPage() {
   }, []);
 
   const handleDeleteMeal = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this meal? It will be removed from all restaurants.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this meal? It will be removed from all restaurants.",
+      )
+    ) {
       return;
     }
     try {
@@ -145,15 +152,16 @@ export default function MealsPage() {
     }
   };
 
-  const categoryFilterConfig: FilterConfig[] = categories.length > 0
-    ? [
-        {
-          key: "category",
-          label: "All Categories",
-          options: categories.map((c) => ({ value: c.id, label: c.name })),
-        },
-      ]
-    : [];
+  const categoryFilterConfig: FilterConfig[] =
+    categories.length > 0
+      ? [
+          {
+            key: "category",
+            label: "All Categories",
+            options: categories.map((c) => ({ value: c.id, label: c.name })),
+          },
+        ]
+      : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,10 +174,15 @@ export default function MealsPage() {
                 Meals Management
               </h1>
               <p className="mt-1 text-gray-500 font-medium">
-                Create and manage global meals that can be used across all restaurants.
+                Create and manage global meals that can be used across all
+                restaurants.
               </p>
             </div>
-            <Button size="lg" onClick={handleCreateClick} className="shadow-lg shadow-blue-200 shrink-0">
+            <Button
+              size="lg"
+              onClick={handleCreateClick}
+              className="shadow-lg shadow-blue-200 shrink-0"
+            >
               Create New Meal
             </Button>
           </div>
@@ -190,8 +203,16 @@ export default function MealsPage() {
           {/* Error */}
           {error && (
             <div className="mb-6 p-4 text-red-700 bg-red-50 rounded-lg border border-red-100 flex items-center">
-              <svg className="w-5 h-5 mr-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              <svg
+                className="w-5 h-5 mr-3 shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
               {error}
             </div>
@@ -267,6 +288,7 @@ export default function MealsPage() {
                       name: editingMeal.name,
                       description: editingMeal.description || "",
                       categoryId: editingMeal.categoryId,
+                      type: editingMeal.type || undefined,
                       tags: editingMeal.tags || [],
                       imageUrl:
                         (editingMeal as any).imageUrl ||

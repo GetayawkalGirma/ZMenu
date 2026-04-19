@@ -46,6 +46,7 @@ export async function updateRestaurant(
 
     if (result.success) {
       revalidatePath("/admin/restaurant-management");
+      revalidatePath(`/admin/restaurant-management/${id}`);
     }
 
     return result;
@@ -54,6 +55,26 @@ export async function updateRestaurant(
       return { success: false, error: "Validation failed: " + error.message };
     }
     return { success: false, error: "Failed to update restaurant" };
+  }
+}
+
+export async function toggleRestaurantStatus(id: string, currentStatus: string) {
+  try {
+    const newStatus = currentStatus === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+    
+    // We can skip full validation here as we are only changing the status
+    const result = await RestaurantService.updateRestaurant(id, { 
+      status: newStatus as any 
+    } as any);
+
+    if (result.success) {
+      revalidatePath("/admin/restaurant-management");
+      revalidatePath(`/admin/restaurant-management/${id}`);
+    }
+
+    return result;
+  } catch (error) {
+    return { success: false, error: "Failed to toggle restaurant status" };
   }
 }
 
@@ -85,5 +106,24 @@ export async function getRestaurant(id: string) {
 }
 
 export async function searchRestaurants(query: string) {
-  return await RestaurantService.searchRestaurants(query);
+   return await RestaurantService.searchRestaurants(query);
+}
+ 
+export async function calculateCoordinates(id: string) {
+  try {
+    const res = await RestaurantService.getRestaurantById(id);
+    if (!res.success || !res.data) return { success: false, error: "Restaurant not found" };
+    
+    // This will trigger the extractCoordinates logic in the service
+    const result = await RestaurantService.updateRestaurant(id, {
+      geoLocation: (res.data as any).geoLocation
+    } as any);
+ 
+    if (result.success) {
+      revalidatePath(`/admin/restaurant-management/${id}`);
+    }
+    return result;
+  } catch (error) {
+    return { success: false, error: "Failed to calculate coordinates" };
+  }
 }

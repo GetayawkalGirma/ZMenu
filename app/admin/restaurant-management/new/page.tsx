@@ -65,7 +65,7 @@ export default function NewRestaurantPage() {
     if (result.success && result.data) {
       const menuResult = await getRestaurantMenu(createdRestaurantId);
       if (menuResult.success && menuResult.data) {
-        setMenuItems(menuResult.data);
+        setMenuItems(menuResult.data.items);
       }
     } else {
       alert(`Failed to add menu item: ${result.error}`);

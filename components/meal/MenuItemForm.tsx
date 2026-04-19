@@ -3,7 +3,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
 import { X, Upload, ImageIcon } from "lucide-react";
-import type { MenuItemFormData, Category, MenuItem } from "@/lib/types/meal";
+import {
+  MenuItemFormData,
+  Category,
+  MenuItem,
+  MenuCategory,
+} from "@/lib/types/meal";
 import {
   searchMenuItems,
   getCategories,
@@ -26,6 +31,7 @@ export function MenuItemForm({
     name: initialData?.name || "",
     description: initialData?.description || "",
     categoryId: initialData?.categoryId || "",
+    type: initialData?.type || undefined,
     tags: initialData?.tags || [],
   });
 
@@ -84,6 +90,7 @@ export function MenuItemForm({
       name: item.name,
       description: item.description || "",
       categoryId: item.categoryId,
+      type: item.type || prev.type,
       tags: item.tags || prev.tags,
     }));
     setTagsText(item.tags?.join(", ") || "");
@@ -223,7 +230,25 @@ export function MenuItemForm({
         </div>
       </div>
 
-      {/* Description */}
+      {/* Type */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-gray-700">Type</label>
+        <select
+          value={formData.type || ""}
+          onChange={(e) =>
+            handleInputChange(
+              "type",
+              (e.target.value as MenuCategory) || undefined,
+            )
+          }
+          className={inputClass()}
+        >
+          <option value="">Select a type...</option>
+          <option value={MenuCategory.MEAL}>Meal</option>
+          <option value={MenuCategory.DRINK}>Drink</option>
+          <option value={MenuCategory.SIDES}>Sides</option>
+        </select>
+      </div>
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">
           Description

@@ -38,9 +38,7 @@ export default function EditRestaurantPage({
 }) {
   const router = useRouter();
   const [restaurantId, setRestaurantId] = useState<string>("");
-  const [restaurant, setRestaurant] = useState<CreateRestaurantInput | null>(
-    null,
-  );
+  const [restaurant, setRestaurant] = useState<any>(null);
   const [menuItems, setMenuItems] = useState<RestaurantMenu[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,27 +68,12 @@ export default function EditRestaurantPage({
         const r = result.data as any;
         const featureIds = r.features?.map((f: any) => f.feature.id) || [];
         setInitialFeatureIds(featureIds);
-
-        const formData: CreateRestaurantInput = {
-          name: r.name || "",
-          location: r.location || "",
-          geoLocation: r.geoLocation || undefined,
-          logoUrl: r.logoUrl || undefined,
-          logoId: r.logoId || undefined,
-          menuImageUrl: r.menuImageUrl || undefined,
-          menuImageId: r.menuImageId || undefined,
-          status: (r.status as "DRAFT" | "PUBLISHED") || "DRAFT",
-          rating: r.rating || undefined,
-          noiselevel: r.noiselevel || undefined,
-          privacylevel: r.privacylevel || undefined,
-          featureIds,
-        };
-        setRestaurant(formData);
+        setRestaurant(r);
 
         // Load menu items via service (hydrates images)
         const menuResult = await getRestaurantMenu(id);
         if (menuResult.success && menuResult.data) {
-          setMenuItems(menuResult.data);
+          setMenuItems(menuResult.data.items);
         }
       } else {
         setError("Restaurant not found");
@@ -112,6 +95,7 @@ export default function EditRestaurantPage({
     try {
       const updateData = {
         ...data,
+        status: data.status, // Explicitly pass status
         noiselevel: data.features?.noiseLevel || data.noiselevel,
         privacylevel: data.features?.privacyLevel || data.privacylevel,
         featureIds: data.featureIds || [],
@@ -150,7 +134,7 @@ export default function EditRestaurantPage({
     if (result.success && result.data) {
       const menuResult = await getRestaurantMenu(restaurantId);
       if (menuResult.success && menuResult.data) {
-        setMenuItems(menuResult.data);
+        setMenuItems(menuResult.data.items);
       }
     } else {
       alert(`Failed to add menu item: ${result.error}`);
@@ -167,7 +151,7 @@ export default function EditRestaurantPage({
     if (result.success) {
       const menuResult = await getRestaurantMenu(restaurantId);
       if (menuResult.success && menuResult.data) {
-        setMenuItems(menuResult.data);
+        setMenuItems(menuResult.data.items);
       }
     } else {
       alert(`Failed to update menu item: ${result.error}`);
@@ -298,6 +282,7 @@ export default function EditRestaurantPage({
                       logoId: (restaurant as any).logoId,
                       menuImageUrl: (restaurant as any).menuImageUrl,
                       menuImageId: (restaurant as any).menuImageId,
+                      status: (restaurant as any).status,
                       features: {
                         isLuxury: false,
                         isGrabAndGo: false,
@@ -308,6 +293,8 @@ export default function EditRestaurantPage({
                           (restaurant.privacylevel as PrivacyLevel) ||
                           PrivacyLevel.PUBLIC,
                       },
+                      latitude: restaurant.latitude,
+                      longitude: restaurant.longitude,
                     }}
                     onSubmit={handleSubmit}
                     loading={saving}

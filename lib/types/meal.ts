@@ -6,6 +6,7 @@ export interface MenuItem {
   description?: string | null;
   categoryId: string;
   category?: Category;
+  type?: MenuCategory | null;
   tags: string[];
   imageId?: string | null;
   imageUrl?: string;
@@ -76,11 +77,18 @@ export enum FoodCategoryType {
   EXTRA = "EXTRA",
 }
 
+export enum MenuCategory {
+  MEAL = "MEAL",
+  DRINK = "DRINK",
+  SIDES = "SIDES",
+}
+
 // Form data for creating/updating a global MenuItem
 export interface MenuItemFormData {
   name: string;
   description: string;
   categoryId: string;
+  type?: MenuCategory;
   tags: string[];
   image?: File;
   imageUrl?: string;
@@ -128,6 +136,8 @@ export interface MealFormData extends MenuItemFormData {
   restImage?: File; // New for specific restaurant image
   restName?: string; // Restaurant-specific name
   restDescription?: string; // Restaurant-specific description
+  foodCategoryType?: FoodCategoryType;
+  dietaryCategory?: DietaryCategory;
   restaurantId?: string;
   menuItemId?: string;
   removeImage?: boolean;

@@ -1,15 +1,11 @@
 import prisma from "@/lib/prisma";
-import { 
-  calculateHash, 
-  ensureStorageRoot, 
-  saveToDisk, 
-  deleteFromDisk,
-  getFilePaths 
-} from "@/lib/storage/core";
+import { supabase } from "@/lib/supabase";
+import { calculateHash } from "@/lib/storage/core";
 import path from "node:path";
 
 export class FileService {
   private static instance: FileService;
+  private readonly BUCKET_NAME = "zmenu-storage";
 
   static getInstance(): FileService {
     if (!FileService.instance) {
@@ -19,31 +15,43 @@ export class FileService {
   }
 
   /**
-   * Upload a file with deduplication.
-   * Receives a Buffer or a File-like object.
+   * Upload a file with deduplication to Supabase Storage.
    */
   async uploadFile(
     buffer: Buffer,
     filename: string,
     mimeType: string
   ) {
-    await ensureStorageRoot();
-
     const hash = calculateHash(buffer);
     const extension = path.extname(filename).replace(".", "");
     const size = buffer.length;
 
-    // 1. Check if file already exists in DB
+    // 1. Check if file already exists in DB (Deduplication)
     const existingFile = await prisma.file.findUnique({
       where: { hash }
     });
 
     if (existingFile) {
-      return existingFile;
+      return {
+        ...existingFile,
+        url: this.getPublicUrl(existingFile.path)
+      };
     }
 
-    // 2. Save to disk
-    const relativePath = await saveToDisk(buffer, hash, extension);
+    // 2. Upload to Supabase Storage
+    const storagePath = `${hash}.${extension}`;
+    
+    const { data, error } = await supabase.storage
+      .from(this.BUCKET_NAME)
+      .upload(storagePath, buffer, {
+        contentType: mimeType,
+        upsert: true
+      });
+
+    if (error) {
+      console.error("Supabase Storage Error:", error);
+      throw new Error(`Failed to upload file to Supabase: ${error.message}`);
+    }
 
     // 3. Create record in DB
     const newFile = await prisma.file.create({
@@ -53,43 +61,52 @@ export class FileService {
         extension,
         mimeType,
         size,
-        path: relativePath,
+        path: data.path, // Store the bucket path
       }
     });
 
     return {
       ...newFile,
-      url: `/storage/${relativePath.replace(/\\/g, "/")}`
+      url: this.getPublicUrl(newFile.path)
     };
   }
 
   /**
-   * Helper to get public URL from internal path.
+   * Helper to get public URL from Supabase Storage.
    */
-  getPublicUrl(relativePath: string): string {
-    return `/storage/${relativePath.replace(/\\/g, "/")}`;
+  getPublicUrl(storagePath: string): string {
+    const { data } = supabase.storage
+      .from(this.BUCKET_NAME)
+      .getPublicUrl(storagePath);
+      
+    return data.publicUrl;
   }
 
   /**
    * Get file by ID
    */
   async getFileById(id: string) {
-    return await prisma.file.findUnique({
+    const file = await prisma.file.findUnique({
       where: { id }
     });
+    
+    if (file) {
+      return {
+        ...file,
+        url: this.getPublicUrl(file.path)
+      };
+    }
+    return null;
   }
 
   /**
-   * Delete a file (record and potentially disk if no other references exist)
-   * Note: In a deduplicated system, we should ideally count references.
-   * For now, we'll just delete the record. Permanent disk deletion might 
-   * need a background job or reference counting.
+   * Delete a file from Supabase and DB
    */
   async deleteFile(id: string) {
     const file = await prisma.file.findUnique({ where: { id } });
     if (!file) return false;
 
-    // Delete record
+    // Delete record from DB
     await prisma.file.delete({ where: { id } });
 
     // Check if any other records use the same hash
@@ -97,8 +114,15 @@ export class FileService {
       where: { hash: file.hash }
     });
 
+    // If no more references, delete from Supabase Storage
     if (!otherReferences) {
-      await deleteFromDisk(file.path);
+      const { error } = await supabase.storage
+        .from(this.BUCKET_NAME)
+        .remove([file.path]);
+        
+      if (error) {
+        console.error("Failed to delete from Supabase Storage:", error);
+      }
     }
 
     return true;
