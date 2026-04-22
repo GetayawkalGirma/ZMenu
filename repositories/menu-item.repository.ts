@@ -1,20 +1,68 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import type {
   MenuItem,
   RestaurantMenu,
   Category,
   PortionSize,
   MenuCategory,
+  RestaurantImageOption,
 } from "@/lib/types/meal";
 
 export class MenuItemRepository {
+  private static readonly menuItemInclude = {
+    category: true,
+    image: true,
+  } as const;
+
+  private static async getMenuCategoryEnumSchema(
+    db: Prisma.TransactionClient | typeof prisma = prisma,
+  ): Promise<"menu" | "public"> {
+    const result = await db.$queryRaw<Array<{ schema_name: string }>>(Prisma.sql`
+      SELECT enum_ns.nspname AS schema_name
+      FROM pg_attribute attr
+      JOIN pg_class cls ON cls.oid = attr.attrelid
+      JOIN pg_namespace table_ns ON table_ns.oid = cls.relnamespace
+      JOIN pg_type typ ON typ.oid = attr.atttypid
+      JOIN pg_namespace enum_ns ON enum_ns.oid = typ.typnamespace
+      WHERE table_ns.nspname = 'menu'
+        AND cls.relname = 'MenuItem'
+        AND attr.attname = 'type'
+        AND attr.attnum > 0
+        AND NOT attr.attisdropped
+      LIMIT 1
+    `);
+
+    const schemaName = result[0]?.schema_name;
+    if (schemaName === "menu" || schemaName === "public") {
+      return schemaName;
+    }
+
+    throw new Error(
+      `Unsupported schema for menu type enum: ${schemaName ?? "unknown"}`,
+    );
+  }
+
+  private static async updateMenuItemType(
+    db: Prisma.TransactionClient | typeof prisma,
+    id: string,
+    type: MenuCategory,
+  ): Promise<void> {
+    const enumSchema = await this.getMenuCategoryEnumSchema(db);
+    const enumType = Prisma.raw(`"${enumSchema}"."MenuCategory"`);
+
+    await db.$executeRaw(Prisma.sql`
+      UPDATE "menu"."MenuItem"
+      SET "type" = CAST(${type} AS ${enumType}),
+          "updatedAt" = NOW()
+      WHERE "id" = ${id}
+    `);
+  }
+
   // Get all menu items
   static async getAll(): Promise<MenuItem[]> {
     const menuItems = await prisma.menuItem.findMany({
-      include: {
-        category: true,
-        image: true,
-      },
+      include: this.menuItemInclude,
       orderBy: {
         name: "asc",
       },
@@ -51,22 +99,44 @@ export class MenuItemRepository {
     tags?: string[];
     imageId?: string | null;
   }): Promise<MenuItem> {
-    const menuItem = await prisma.menuItem.create({
-      data: {
-        name: data.name,
-        description: data.description,
-        categoryId: data.categoryId,
-        type: data.type,
-        tags: data.tags || [],
-        imageId: data.imageId,
-      },
-      include: {
-        category: true,
-        image: true,
-      },
-    });
+    if (data.type === undefined) {
+      const menuItem = await prisma.menuItem.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          categoryId: data.categoryId,
+          tags: data.tags || [],
+          imageId: data.imageId,
+        },
+        include: this.menuItemInclude,
+      });
 
-    return menuItem as unknown as MenuItem;
+      return menuItem as unknown as MenuItem;
+    }
+
+    const menuType = data.type;
+
+    return prisma.$transaction(async (tx) => {
+      const created = await tx.menuItem.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          categoryId: data.categoryId,
+          tags: data.tags || [],
+          imageId: data.imageId,
+        },
+        select: { id: true },
+      });
+
+      await this.updateMenuItemType(tx, created.id, menuType);
+
+      const menuItem = await tx.menuItem.findUniqueOrThrow({
+        where: { id: created.id },
+        include: this.menuItemInclude,
+      });
+
+      return menuItem as unknown as MenuItem;
+    });
   }
 
   // Update menu item (Global Abstract Food)
@@ -81,23 +151,46 @@ export class MenuItemRepository {
       imageId?: string | null;
     }>,
   ): Promise<MenuItem> {
-    const menuItem = await prisma.menuItem.update({
-      where: { id },
-      data: {
-        name: data.name,
-        description: data.description,
-        categoryId: data.categoryId,
-        type: data.type,
-        tags: data.tags,
-        imageId: data.imageId,
-      },
-      include: {
-        category: true,
-        image: true,
-      },
-    });
+    if (data.type === undefined) {
+      const menuItem = await prisma.menuItem.update({
+        where: { id },
+        data: {
+          name: data.name,
+          description: data.description,
+          categoryId: data.categoryId,
+          tags: data.tags,
+          imageId: data.imageId,
+        },
+        include: this.menuItemInclude,
+      });
 
-    return menuItem as unknown as MenuItem;
+      return menuItem as unknown as MenuItem;
+    }
+
+    const menuType = data.type;
+
+    return prisma.$transaction(async (tx) => {
+      await tx.menuItem.update({
+        where: { id },
+        data: {
+          name: data.name,
+          description: data.description,
+          categoryId: data.categoryId,
+          tags: data.tags,
+          imageId: data.imageId,
+        },
+        select: { id: true },
+      });
+
+      await this.updateMenuItemType(tx, id, menuType);
+
+      const menuItem = await tx.menuItem.findUniqueOrThrow({
+        where: { id },
+        include: this.menuItemInclude,
+      });
+
+      return menuItem as unknown as MenuItem;
+    });
   }
 
   // Delete menu item
@@ -280,6 +373,153 @@ export class MenuItemRepository {
 }
 
 export class RestaurantMenuRepository {
+  static async rememberRestaurantImage(params: {
+    restaurantId: string;
+    imageId: string;
+    sourceRestaurantMenuId?: string;
+  }): Promise<void> {
+    await prisma.restaurantImageLibrary.upsert({
+      where: {
+        restaurantId_imageId: {
+          restaurantId: params.restaurantId,
+          imageId: params.imageId,
+        },
+      },
+      create: {
+        restaurantId: params.restaurantId,
+        imageId: params.imageId,
+        sourceRestaurantMenuId: params.sourceRestaurantMenuId,
+      },
+      update: {
+        sourceRestaurantMenuId:
+          params.sourceRestaurantMenuId ?? undefined,
+      },
+    });
+  }
+
+  static async getRestaurantImagePool(
+    restaurantId: string,
+    excludeRestaurantMenuId?: string,
+  ): Promise<RestaurantImageOption[]> {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: {
+        logoId: true,
+        logo: { select: { path: true } },
+        menuImageId: true,
+        menuImage: { select: { path: true } },
+      },
+    });
+
+    const libraryItems = await prisma.restaurantImageLibrary.findMany({
+      where: { restaurantId },
+      include: {
+        image: { select: { path: true } },
+        sourceRestaurantMenu: {
+          select: {
+            name: true,
+            menuItem: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 500,
+    });
+
+    const restaurantMenuItems = await prisma.restaurantMenu.findMany({
+      where: {
+        restaurantId,
+        ...(excludeRestaurantMenuId
+          ? { NOT: { id: excludeRestaurantMenuId } }
+          : {}),
+        OR: [{ imageId: { not: null } }, { menuItem: { imageId: { not: null } } }],
+      },
+      select: {
+        id: true,
+        name: true,
+        imageId: true,
+        image: { select: { path: true } },
+        menuItem: {
+          select: {
+            name: true,
+            imageId: true,
+            image: { select: { path: true } },
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 250,
+    });
+
+    const imagePool = new Map<string, RestaurantImageOption>();
+
+    // 1. Add current logo and menu image first
+    if (restaurant?.logoId && restaurant.logo?.path) {
+      imagePool.set(restaurant.logoId, {
+        imageId: restaurant.logoId,
+        imageUrl: restaurant.logo.path,
+        sourceMealName: "Restaurant Logo",
+        sourceType: "logo",
+      });
+    }
+
+    if (restaurant?.menuImageId && restaurant.menuImage?.path) {
+      imagePool.set(restaurant.menuImageId, {
+        imageId: restaurant.menuImageId,
+        imageUrl: restaurant.menuImage.path,
+        sourceMealName: "Restaurant Menu Image",
+        sourceType: "menu_image",
+      });
+    }
+
+    // 2. Add items from library
+    for (const item of libraryItems) {
+      if (!item.image?.path) continue;
+      if (imagePool.has(item.imageId)) continue;
+
+      imagePool.set(item.imageId, {
+        imageId: item.imageId,
+        imageUrl: item.image.path,
+        sourceMealName:
+          item.sourceRestaurantMenu?.name?.trim() ||
+          item.sourceRestaurantMenu?.menuItem?.name ||
+          "Saved Library Image",
+        sourceType: "library",
+      });
+    }
+
+    // 3. Add items currently active on meals
+    for (const item of restaurantMenuItems) {
+      const sourceMealName = item.name?.trim() || item.menuItem.name || "Menu item";
+
+      if (item.imageId && item.image?.path && !imagePool.has(item.imageId)) {
+        imagePool.set(item.imageId, {
+          imageId: item.imageId,
+          imageUrl: item.image.path,
+          sourceMealName,
+          sourceType: "restaurant_menu",
+        });
+      }
+
+      if (
+        item.menuItem.imageId &&
+        item.menuItem.image?.path &&
+        !imagePool.has(item.menuItem.imageId)
+      ) {
+        imagePool.set(item.menuItem.imageId, {
+          imageId: item.menuItem.imageId,
+          imageUrl: item.menuItem.image.path,
+          sourceMealName: item.menuItem.name || sourceMealName,
+          sourceType: "global_menu_item",
+        });
+      }
+    }
+
+    return Array.from(imagePool.values());
+  }
+
   static async findRestaurantVariantByName(params: {
     restaurantId: string;
     menuItemId: string;
@@ -306,6 +546,25 @@ export class RestaurantMenuRepository {
       include: {
         menuItem: {
           include: {
+            image: true,
+          },
+        },
+        image: true,
+        restaurant: true,
+      },
+    });
+
+    return restaurantMenu as unknown as RestaurantMenu | null;
+  }
+
+  // Get restaurant menu item by ID
+  static async getById(id: string): Promise<RestaurantMenu | null> {
+    const restaurantMenu = await prisma.restaurantMenu.findUnique({
+      where: { id },
+      include: {
+        menuItem: {
+          include: {
+            category: true,
             image: true,
           },
         },
@@ -523,6 +782,14 @@ export class RestaurantMenuRepository {
     // Update global analytics after change
     await MenuItemRepository.updateAnalytics(data.menuItemId);
 
+    if (restaurantMenu.imageId) {
+      await this.rememberRestaurantImage({
+        restaurantId: restaurantMenu.restaurantId,
+        imageId: restaurantMenu.imageId,
+        sourceRestaurantMenuId: restaurantMenu.id,
+      });
+    }
+
     return restaurantMenu as unknown as RestaurantMenu;
   }
 
@@ -546,8 +813,17 @@ export class RestaurantMenuRepository {
       description?: string | null;
       foodCategoryType?: string | null;
       dietaryCategory?: string | null;
+      menuItemId?: string;
     }>,
   ): Promise<RestaurantMenu> {
+    const existingRestaurantMenu = await prisma.restaurantMenu.findUnique({
+      where: { id },
+      select: {
+        restaurantId: true,
+        imageId: true,
+      },
+    });
+
     const restaurantMenu = await prisma.restaurantMenu.update({
       where: { id },
       data: {
@@ -567,6 +843,7 @@ export class RestaurantMenuRepository {
         description: data.description,
         foodCategoryType: data.foodCategoryType as any,
         dietaryCategory: data.dietaryCategory as any,
+        menuItemId: data.menuItemId,
       },
       include: {
         menuItem: {
@@ -581,6 +858,22 @@ export class RestaurantMenuRepository {
 
     // Update global analytics after change
     await MenuItemRepository.updateAnalytics(restaurantMenu.menuItemId);
+
+    if (existingRestaurantMenu?.imageId) {
+      await this.rememberRestaurantImage({
+        restaurantId: existingRestaurantMenu.restaurantId,
+        imageId: existingRestaurantMenu.imageId,
+        sourceRestaurantMenuId: id,
+      });
+    }
+
+    if (restaurantMenu.imageId) {
+      await this.rememberRestaurantImage({
+        restaurantId: restaurantMenu.restaurantId,
+        imageId: restaurantMenu.imageId,
+        sourceRestaurantMenuId: restaurantMenu.id,
+      });
+    }
 
     return restaurantMenu as unknown as RestaurantMenu;
   }

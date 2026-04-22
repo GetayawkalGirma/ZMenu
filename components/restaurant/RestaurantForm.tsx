@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Button,
   Input,
@@ -15,6 +15,7 @@ import {
   NoiseLevel,
   PrivacyLevel,
 } from "@/lib/types/restaurant";
+import { RestaurantImagePickerDialog } from "@/components/meal/RestaurantImagePickerDialog";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -58,24 +59,24 @@ export function RestaurantForm({
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>(initialFeatureIds || []);
   
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [selectedLogoId, setSelectedLogoId] = useState<string | null>(
+    initialData?.logoId || null,
+  );
+  const [logoPreview, setLogoPreview] = useState<string>(initialData?.logoUrl || "");
   const [removeLogo, setRemoveLogo] = useState(false);
+  const [showLogoPicker, setShowLogoPicker] = useState(false);
 
   const [menuImageFile, setMenuImageFile] = useState<File | null>(null);
-  const [menuImagePreview, setMenuImagePreview] = useState<string>("");
+  const [selectedMenuImageId, setSelectedMenuImageId] = useState<string | null>(
+    initialData?.menuImageId || null,
+  );
+  const [menuImagePreview, setMenuImagePreview] = useState<string>(
+    initialData?.menuImageUrl || "",
+  );
   const [removeMenuImage, setRemoveMenuImage] = useState(false);
+  const [showMenuImagePicker, setShowMenuImagePicker] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (initialData?.logoUrl) {
-      setLogoPreview(initialData.logoUrl);
-    }
-
-    if (initialData?.menuImageUrl) {
-      setMenuImagePreview(initialData.menuImageUrl);
-    }
-  }, [initialData]);
 
   const handleInputChange = (field: keyof RestaurantFormData, value: any) => {
     setFormData((prev) => ({
@@ -105,6 +106,7 @@ export function RestaurantForm({
     }
 
     setLogoFile(file);
+    setSelectedLogoId(null);
     setLogoPreview(URL.createObjectURL(file));
     setRemoveLogo(false);
     if (errors.logo) setErrors((prev) => ({ ...prev, logo: "" }));
@@ -126,6 +128,7 @@ export function RestaurantForm({
     }
 
     setMenuImageFile(file);
+    setSelectedMenuImageId(null);
     setMenuImagePreview(URL.createObjectURL(file));
     setRemoveMenuImage(false);
     if (errors.menuImage) setErrors((prev) => ({ ...prev, menuImage: "" }));
@@ -133,12 +136,14 @@ export function RestaurantForm({
 
   const handleRemoveLogo = () => {
     setLogoFile(null);
+    setSelectedLogoId(null);
     setLogoPreview("");
     setRemoveLogo(true);
   };
 
   const handleRemoveMenuImage = () => {
     setMenuImageFile(null);
+    setSelectedMenuImageId(null);
     setMenuImagePreview("");
     setRemoveMenuImage(true);
   };
@@ -168,7 +173,9 @@ export function RestaurantForm({
     const submitData = {
       ...formData,
       logo: logoFile || undefined,
+      logoId: selectedLogoId || undefined,
       menuImage: menuImageFile || undefined,
+      menuImageId: selectedMenuImageId || undefined,
       removeLogo,
       removeMenuImage,
       featureIds: selectedFeatures,
@@ -186,6 +193,41 @@ export function RestaurantForm({
 
   return (
     <div className="w-full">
+      {restaurantId && (
+        <>
+          <RestaurantImagePickerDialog
+            open={showLogoPicker}
+            onOpenChange={setShowLogoPicker}
+            restaurantId={restaurantId}
+            title="Choose Restaurant Logo from Library"
+            currentImageId={selectedLogoId}
+            onSelect={(image) => {
+              setLogoFile(null);
+              setRemoveLogo(false);
+              setSelectedLogoId(image.imageId);
+              setLogoPreview(image.imageUrl);
+              if (errors.logo) setErrors((prev) => ({ ...prev, logo: "" }));
+            }}
+          />
+          <RestaurantImagePickerDialog
+            open={showMenuImagePicker}
+            onOpenChange={setShowMenuImagePicker}
+            restaurantId={restaurantId}
+            title="Choose Cover Image from Library"
+            currentImageId={selectedMenuImageId}
+            onSelect={(image) => {
+              setMenuImageFile(null);
+              setRemoveMenuImage(false);
+              setSelectedMenuImageId(image.imageId);
+              setMenuImagePreview(image.imageUrl);
+              if (errors.menuImage) {
+                setErrors((prev) => ({ ...prev, menuImage: "" }));
+              }
+            }}
+          />
+        </>
+      )}
+
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">
           {mode === "create" ? "Add New Restaurant" : "Edit Restaurant"}
@@ -332,6 +374,16 @@ export function RestaurantForm({
                 onChange={handleLogoChange}
                 className={`w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${errors.logo ? 'border-red-500' : ''}`}
               />
+              {restaurantId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLogoPicker(true)}
+                >
+                  Choose from Restaurant Images
+                </Button>
+              )}
               {errors.logo && <p className="text-xs text-red-600 mt-1">{errors.logo}</p>}
             </div>
           </div>
@@ -371,6 +423,16 @@ export function RestaurantForm({
                 onChange={handleMenuImageChange}
                 className={`w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${errors.menuImage ? 'border-red-500' : ''}`}
               />
+              {restaurantId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMenuImagePicker(true)}
+                >
+                  Choose from Restaurant Images
+                </Button>
+              )}
               {errors.menuImage && <p className="text-xs text-red-600 mt-1">{errors.menuImage}</p>}
             </div>
           </div>

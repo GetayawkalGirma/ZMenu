@@ -1,0 +1,9 @@
+model SeededPost {
+  id         String   @id @default(cuid())
+  telegramId String   @unique
+  channel    String
+  createdAt  DateTime @default(now())
+
+  @@index([telegramId])
+  @@schema("public")
+}

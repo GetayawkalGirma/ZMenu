@@ -1,0 +1,279 @@
+import prisma from "../../lib/prisma";
+import "dotenv/config";
+import fs from "fs";
+import { FoodCategoryType, DietaryCategory, PortionSize } from "@prisma/client";
+
+// Configuration: Change this to swap target channels
+const TARGET_CHANNEL = "Foodism11"; 
+
+// Constants for our fixed "Other" categories as requested
+const OTHER_FOOD_ID = "cmo5f21hk00046pr98jxr6qgc";
+const OTHER_DRINK_ID = "cmo5ezp5z00026pr9cnxjxogp";
+
+function getGoogleApiKey() {
+  const externalEnvPath = "/Users/yawkal/Documents/imposter folder/word seeder/.env";
+  try {
+    const content = fs.readFileSync(externalEnvPath, "utf-8");
+    const match = content.match(/GOOGLE_API_KEY=([^\s]+)/);
+    return match ? match[1] : null;
+  } catch (e) {
+    return process.env.GOOGLE_API_KEY;
+  }
+}
+
+interface AIServiceResponse {
+  hasValidData: boolean;
+  restaurant: {
+    name: string | null;
+    location: string | null;
+    geoLocation: string | null;
+    imageUrl: string | null;
+  } | null;
+  meals: Array<{
+    name: string;
+    price: number | string;
+    description: string | null;
+    type: FoodCategoryType;
+    dietaryCategory: DietaryCategory;
+    calories: number | null;
+    portionSize: PortionSize | null;
+    spicyLevel: number | null;
+    imageUrl: string | null;
+  }>;
+}
+
+class FoodismServiceSeeder {
+  private prisma = prisma;
+  private apiKey: string;
+
+  constructor() {
+    this.apiKey = getGoogleApiKey() || "";
+  }
+
+  async run() {
+    console.log(`🚀 Starting AI Seeder for: @${TARGET_CHANNEL}...`);
+    try {
+      const resp = await fetch(`https://t.me/s/${TARGET_CHANNEL}`);
+      const html = await resp.text();
+      
+      const messageBlocks = this.extractMessageBlocks(html);
+      console.log(`🔍 Found ${messageBlocks.length} messages in HTML. Analyzing...`);
+
+      for (const block of messageBlocks) {
+        console.log("\n--- Analyzing Message Block ---");
+        
+        const aiData = await this.askAI(block.text, block.images);
+        
+        console.log("🤖 AI Extraction Results:", JSON.stringify(aiData, null, 2));
+
+        if (!aiData.hasValidData || !aiData.restaurant?.name || !aiData.meals || aiData.meals.length === 0) {
+          console.log("⏭️ Skipping: Post lacks required Restaurant + Menu data.");
+          continue;
+        }
+
+        // 1. Restaurant Logic
+        let restaurant = await this.prisma.restaurant.findFirst({
+          where: { 
+            name: { equals: aiData.restaurant.name! }
+          }
+        });
+
+        if (!restaurant) {
+          const iframe = this.generateMapIframe(aiData.restaurant.name!, aiData.restaurant.location || undefined);
+          
+          restaurant = await this.prisma.restaurant.create({
+            data: {
+              name: aiData.restaurant.name,
+              location: aiData.restaurant.location || "Addis Ababa",
+              geoLocation: iframe, // Use the generated iframe
+              menuImageUrl: aiData.restaurant.imageUrl,
+              status: "DRAFT" 
+            }
+          });
+          console.log(`🏠 SUCCESS: New Restaurant Created: ${restaurant.name}`);
+        } else {
+          console.log(`🏠 INFO: Restaurant found in DB: ${restaurant.name}`);
+        }
+
+        // 2. Meal Logic (RestaurantMenu)
+        for (const meal of aiData.meals) {
+          const cleanPrice = typeof meal.price === 'string' ? parseInt(meal.price.replace(/[^\d]/g, "")) : (meal.price || 0);
+          
+          if (!meal.name) continue;
+
+          // Deduplicate within this restaurant
+          const existingMeal = await this.prisma.restaurantMenu.findFirst({
+            where: {
+              restaurantId: restaurant.id,
+              name: { equals: meal.name }
+            }
+          });
+
+          if (existingMeal) {
+            console.log(`⏩ Skip: Already seeded ${meal.name}`);
+            continue;
+          }
+
+          // Decide which "Other" global MenuItem to use
+          const targetMenuItemId = meal.type === "DRINK" ? OTHER_DRINK_ID : OTHER_FOOD_ID;
+
+          try {
+            await this.prisma.restaurantMenu.create({
+              data: {
+                restaurantId: restaurant.id,
+                menuItemId: targetMenuItemId,
+                name: meal.name,
+                price: cleanPrice,
+                description: meal.description || `Freshly discovered venue offering.`,
+                foodCategoryType: meal.type,
+                dietaryCategory: meal.dietaryCategory,
+                calories: meal.calories || 350,
+                portionSize: (meal.portionSize as any) || "ONE_PERSON",
+                spicyLevel: meal.spicyLevel || 0,
+                isAvailable: true,
+                imageUrl: meal.imageUrl,
+                preparationTime: 20
+              }
+            });
+            console.log(`🍔 SUCCESS: Added -> ${meal.name} (${meal.type}) @ ${cleanPrice} ETB`);
+          } catch (err: any) {
+             console.error(`❌ DB Error for ${meal.name}:`, err.message);
+          }
+        }
+      }
+      
+      console.log("\n✅ Seeding operations complete!");
+    } catch (error) {
+      console.error("❌ Seeder failed:", error);
+    } finally {
+      await this.prisma.$disconnect();
+    }
+  }
+
+  private generateMapIframe(name: string, location?: string): string {
+    const query = encodeURIComponent(`${name} ${location || "Addis Ababa"}`);
+    const src = `https://www.google.com/maps?q=${query}&output=embed`;
+    
+    return `<iframe src="${src}" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+  }
+
+  private extractMessageBlocks(html: string): { text: string; images: string[] }[] {
+    const blocks: { text: string; images: string[] }[] = [];
+    const messageSegments = html.split(/tgme_widget_message_wrap/); 
+    
+    for (const segment of messageSegments) {
+      const textSegments = [...segment.matchAll(/<div class="[^"]*text[^"]*"[^>]*>([\s\S]*?)<\/div>/gi)];
+      if (textSegments.length === 0) continue;
+
+      const rawText = textSegments.map(match => match[1])
+        .join("\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .trim();
+
+      if (rawText.length < 20) continue;
+
+      const imageMatches = [...segment.matchAll(/background-image:url\('([^']+)'\)/g)];
+      const images = imageMatches.map(m => m[1]);
+      
+      blocks.push({ 
+        text: rawText, 
+        images
+      });
+    }
+    return blocks.slice(-10); // Analyze the last 10 messages
+  }
+
+  private async askAI(text: string, images: string[]): Promise<AIServiceResponse> {
+    const prompt = `
+      You are a precise data extractor for a food discovery app. Your task is to scrape restaurant and menu data from the provided text.
+
+      EXTRACTION RULES:
+      1. RESTAURANT NAME: Look for text after 🏠. If not found, look for the most prominent venue name.
+      2. LOCATION: Look for text after 📌, 🌍, or 📍. Example: "Bole", "Bethel Road". Map this to the "location" field.
+      3. GEOLOCATION: Extract any Google Maps links or iframes. Map this to the "geoLocation" field.
+      4. MEALS: Identify items listed with prices. Prices might be a suffix (e.g., "Burger - 500 ETB") or a prefix, or just a number nearby. Find the best match.
+      5. TYPE: You MUST categorize each meal as exactly "FOOD", "DRINK", or "EXTRA" (case-sensitive).
+      6. DIETARY CATEGORY: 
+         - "YETSOM": Fasting/Vegan style (No meat, dairy, or eggs).
+         - "YEFITSIK": Regular style (Contains meat, dairy, or eggs).
+         - You MUST use one of these two exact strings (case-sensitive).
+      7. CALORIES: Provide an estimated calorie count for the portion.
+      8. PORTION SIZE: Map to exactly: "ONE_PERSON", "TWO_PEOPLE", "THREE_PEOPLE", or "FAMILY" (case-sensitive).
+      9. PRICE: If no price is found, use 0.
+
+      IMAGES:
+      ${images.length > 0 ? images.map((img, i) => `[Image ${i}]: ${img}`).join('\n') : "No images available"}
+      * Mapping Rule: For each meal, try to guess which image matches it. 
+      * If there is only 1 image and 5 meals, use that image for all 5. 
+      * If there are multiple images, try to find text clues. If no clues, map them in order.
+      * Return the EXACT URL string in the "imageUrl" field.
+
+      POST CONTENT:
+      ${text}
+      
+      Return JSON only strictly matching this schema:
+      {
+        "hasValidData": boolean,
+        "restaurant": {
+          "name": string,
+          "location": string,
+          "geoLocation": string,
+          "imageUrl": string | null
+        },
+        "meals": [
+          {
+            "name": string,
+            "price": number,
+            "description": string,
+            "type": "FOOD" | "DRINK" | "EXTRA",
+            "dietaryCategory": "YETSOM" | "YEFITSIK",
+            "calories": number,
+            "portionSize": "ONE_PERSON" | "TWO_PEOPLE" | "THREE_PEOPLE" | "FAMILY",
+            "spicyLevel": number,
+            "imageUrl": string | null
+          }
+        ]
+      }
+    `;
+
+    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-pro-latest"];
+    let lastError: any = null;
+
+    for (const modelName of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`;
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        const result = await response.json();
+        
+        if (result.error) {
+           const errorCode = result.error.code || 0;
+           lastError = result.error;
+           if (errorCode === 429) continue;
+           return { hasValidData: false, restaurant: null, meals: [] };
+        }
+
+        if (!result.candidates || result.candidates.length === 0) continue;
+
+        let textRes = result.candidates[0].content.parts[0].text;
+        textRes = textRes.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(textRes);
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    return { hasValidData: false, restaurant: null, meals: [] };
+  }
+}
+
+new FoodismServiceSeeder().run();

@@ -59,6 +59,13 @@ export interface RestaurantMenu {
   menuItem?: MenuItem;
 }
 
+export interface RestaurantImageOption {
+  imageId: string;
+  imageUrl: string;
+  sourceMealName: string;
+  sourceType: "restaurant_menu" | "global_menu_item" | "library" | "logo" | "menu_image";
+}
+
 export enum PortionSize {
   ONE_PERSON = "ONE_PERSON",
   TWO_PEOPLE = "TWO_PEOPLE",
@@ -115,6 +122,7 @@ export interface RestaurantMenuFormData {
   imageUrl?: string;
   sortOrder?: number;
   image?: File;
+  imageId?: string;
   removeImage?: boolean;
 }
 

@@ -343,6 +343,7 @@ export default function EditRestaurantPage({
                 onAdd={handleAddMenuItem}
                 onUpdate={handleUpdateMenuItem}
                 onDelete={handleDeleteMenuItem}
+                onRefresh={() => loadRestaurant(restaurantId)}
                 loading={saving}
               />
             </TabsContent>

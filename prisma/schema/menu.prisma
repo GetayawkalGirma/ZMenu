@@ -6,7 +6,7 @@ enum DietaryCategory {
   YETSOM
   YEFITSIK
 
-  @@schema("public")
+  @@schema("menu")
 }
 
 enum FoodCategoryType {
@@ -14,7 +14,7 @@ enum FoodCategoryType {
   DRINK
   EXTRA
 
-  @@schema("public")
+  @@schema("menu")
 }
 
 enum MenuCategory {
@@ -22,7 +22,7 @@ enum MenuCategory {
   DRINK
   SIDES
 
-  @@schema("public")
+  @@schema("menu")
 }
 
 enum PortionSize {
@@ -31,7 +31,7 @@ enum PortionSize {
   THREE_PEOPLE
   FAMILY
 
-  @@schema("public")
+  @@schema("menu")
 }
 
 // =========================
@@ -105,9 +105,9 @@ model RestaurantMenu {
   foodCategoryType FoodCategoryType?
   dietaryCategory  DietaryCategory?
   price            Float
-  portionSize     PortionSize?
-  spicyLevel      Int? // 0–5 scale
-  preparationTime Int? // minutes
+  portionSize      PortionSize?
+  spicyLevel       Int? // 0–5 scale
+  preparationTime  Int? // minutes
 
   ingredients String[] // restaurant-specific recipe
   calories    Int?
@@ -127,8 +127,9 @@ model RestaurantMenu {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  menuItem   MenuItem   @relation(fields: [menuItemId], references: [id])
+  restaurant          Restaurant               @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItem            MenuItem                 @relation(fields: [menuItemId], references: [id])
+  imageLibrarySources RestaurantImageLibrary[] @relation("RestaurantImageLibrarySource")
 
   @@index([restaurantId, menuItemId])
   @@schema("menu")

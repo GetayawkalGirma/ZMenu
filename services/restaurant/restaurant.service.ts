@@ -1,4 +1,5 @@
 import { RestaurantRepository } from "@/repositories/restaurant.repository";
+import { RestaurantMenuRepository } from "@/repositories/menu-item.repository";
 import { fileService } from "@/services/file/file.service";
 import type {
   CreateRestaurantInput,
@@ -19,8 +20,8 @@ export class RestaurantService {
     data: CreateRestaurantInput,
   ): Promise<ServiceResult<Restaurant>> {
     try {
-      let logoId: string | undefined;
-      let menuImageId: string | undefined;
+      let logoId: string | undefined = (data as any).logoId;
+      let menuImageId: string | undefined = (data as any).menuImageId;
 
       // Handle logo upload
       if (data.logo && data.logo instanceof File) {
@@ -62,6 +63,20 @@ export class RestaurantService {
         const menuImage = (restaurant as any).menuImage;
         if (logo) (restaurant as any).logoUrl = fileService.getPublicUrl(logo.path);
         if (menuImage) (restaurant as any).menuImageUrl = fileService.getPublicUrl(menuImage.path);
+
+        // Register in image library
+        if (logoId) {
+          await RestaurantMenuRepository.rememberRestaurantImage({
+            restaurantId: restaurant.id,
+            imageId: logoId,
+          });
+        }
+        if (menuImageId) {
+          await RestaurantMenuRepository.rememberRestaurantImage({
+            restaurantId: restaurant.id,
+            imageId: menuImageId,
+          });
+        }
       }
 
       return { success: true, data: restaurant };
@@ -83,8 +98,8 @@ export class RestaurantService {
     data: UpdateRestaurantInput,
   ): Promise<ServiceResult<Restaurant>> {
     try {
-      let logoId: string | undefined | null;
-      let menuImageId: string | undefined | null;
+      let logoId: string | undefined | null = (data as any).logoId;
+      let menuImageId: string | undefined | null = (data as any).menuImageId;
 
       // Check existing restaurant to avoid losing IDs if they're not provided in update
       const existing = (await RestaurantRepository.getById(id)) as any;
@@ -133,6 +148,20 @@ export class RestaurantService {
         const menuImage = (restaurant as any).menuImage;
         if (logo) (restaurant as any).logoUrl = fileService.getPublicUrl(logo.path);
         if (menuImage) (restaurant as any).menuImageUrl = fileService.getPublicUrl(menuImage.path);
+
+        // Register in image library
+        if (logoId) {
+          await RestaurantMenuRepository.rememberRestaurantImage({
+            restaurantId: id,
+            imageId: logoId,
+          });
+        }
+        if (menuImageId) {
+          await RestaurantMenuRepository.rememberRestaurantImage({
+            restaurantId: id,
+            imageId: menuImageId,
+          });
+        }
       }
 
       return { success: true, data: restaurant };

@@ -9,23 +9,33 @@ import {
   Badge,
 } from "@/components/ui";
 import { formatPrice } from "@/lib/utils";
-import { Clock, Users, Flame, Star } from "lucide-react";
+import { Clock, Users, Flame, Star, Image as ImageIcon, ArrowLeftRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import { useState } from "react";
+import { MealSwapDialog } from "./MealSwapDialog";
+import { MealImageSwapDialog } from "./MealImageSwapDialog";
+
 interface RestaurantMenuCardProps {
+  restaurantId: string;
   restaurantMenu: RestaurantMenu;
   onEdit?: (item: RestaurantMenu) => void;
   onDelete?: (id: string) => void;
+  onChangeCategory?: () => void;
   className?: string;
 }
 
 export function RestaurantMenuCard({
+  restaurantId,
   restaurantMenu,
   onEdit,
   onDelete,
+  onChangeCategory,
   className,
 }: RestaurantMenuCardProps) {
+  const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
   const item = restaurantMenu.menuItem;
   const restaruantsmeal = restaurantMenu.name;
 
@@ -36,6 +46,27 @@ export function RestaurantMenuCard({
         className,
       )}
     >
+      <MealSwapDialog 
+        open={showSwapDialog}
+        onOpenChange={setShowSwapDialog}
+        restaurantMenuId={restaurantMenu.id}
+        mealName={restaruantsmeal || "Item"}
+        currentMenuItemId={item?.id}
+        onSuccess={() => {
+          if (onChangeCategory) onChangeCategory();
+        }}
+      />
+      <MealImageSwapDialog
+        open={showImageDialog}
+        onOpenChange={setShowImageDialog}
+        restaurantId={restaurantId}
+        restaurantMenuId={restaurantMenu.id}
+        mealName={restaruantsmeal || "Item"}
+        currentImageId={restaurantMenu.imageId}
+        onSuccess={() => {
+          if (onChangeCategory) onChangeCategory();
+        }}
+      />
       {/* Featured Badges */}
       <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
         {restaurantMenu.isPopular && (
@@ -91,6 +122,20 @@ export function RestaurantMenuCard({
 
         {/* Action Buttons Overlay */}
         <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => setShowImageDialog(true)}
+            className="p-2 bg-white/90 hover:bg-white text-emerald-600 rounded-full shadow-md transition-colors"
+            title="Swap Image"
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setShowSwapDialog(true)}
+            className="p-2 bg-white/90 hover:bg-white text-blue-600 rounded-full shadow-md transition-colors"
+            title="Swap Menu Item"
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+          </button>
           {onEdit && (
             <button
               onClick={() => onEdit(restaurantMenu)}
@@ -138,6 +183,8 @@ export function RestaurantMenuCard({
           )}
         </div>
       </div>
+
+
 
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">

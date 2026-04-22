@@ -26,6 +26,7 @@ export interface RestaurantFormData {
   location: string;
   geoLocation?: string;
   logo?: File;
+  logoId?: string;
   features: {
     isLuxury: boolean;
     isGrabAndGo: boolean;
@@ -33,6 +34,7 @@ export interface RestaurantFormData {
     privacyLevel: PrivacyLevel;
   };
   menuImage?: File;
+  menuImageId?: string;
   status?: "DRAFT" | "PUBLISHED";
   removeLogo?: boolean;
   removeMenuImage?: boolean;
