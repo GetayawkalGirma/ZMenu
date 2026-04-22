@@ -1,6 +1,8 @@
 name: Sync Telegram Seeder
 
 on:
+  push:
+    branches: [ Admin-Side-Cleanups, main ]
   schedule:
     - cron: '0 */3 * * *' # Every 3 hours
   workflow_dispatch: # Allows manual trigger
@@ -29,7 +31,7 @@ jobs:
         run: pnpm prisma generate
 
       - name: Run Seeder
-        run: npx tsx scripts/seeder/seeder.ts
+        run: npx -y tsx scripts/seeder/seeder.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
