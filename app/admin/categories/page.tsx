@@ -118,16 +118,17 @@ export default function CategoriesPage() {
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          {/* Header */}
+          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-                Categories Management
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight uppercase">
+                Categories
               </h1>
-              <p className="mt-1 text-gray-500 font-medium">
-                Create and manage meal categories for organizing your menu items.
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 font-medium italic">
+                Organize your meals and menus efficiently.
               </p>
             </div>
-            <Button size="lg" onClick={handleCreateClick} className="shadow-lg shadow-blue-200 shrink-0">
+            <Button size="lg" onClick={handleCreateClick} className="w-full sm:w-auto shadow-lg shadow-blue-200 uppercase font-black text-[10px] tracking-widest rounded-xl">
               Create New Category
             </Button>
           </div>
@@ -151,9 +152,9 @@ export default function CategoriesPage() {
           ) : (
             <>
               {/* Categories Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {categories.length === 0 ? (
-                  <div className="col-span-full text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
+                  <div className="col-span-full text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
                     <div className="text-gray-400 mb-4">No categories found</div>
                     <Button onClick={handleCreateClick} variant="outline">
                       Create Your First Category
@@ -161,9 +162,9 @@ export default function CategoriesPage() {
                   </div>
                 ) : (
                   categories.map((category) => (
-                    <Card key={category.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-gray-900">
+                    <Card key={category.id} className="hover:shadow-xl transition-all duration-300 border-gray-100 rounded-2xl flex flex-col">
+                      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
+                        <CardTitle className="text-sm sm:text-lg font-black text-gray-900 uppercase tracking-tight">
                           {category.name}
                         </CardTitle>
                       </CardHeader>

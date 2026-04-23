@@ -169,3 +169,63 @@ export async function getCategories() {
     return { success: false, error: 'Failed to fetch categories' };
   }
 }
+// Swap the underlying MenuItem for a specific restaurant menu record
+export async function swapMealMenuItem(restaurantMenuId: string, newMenuItemId: string) {
+  try {
+    const rm = await RestaurantMenuService.getRestaurantMenuById(restaurantMenuId);
+    if (!rm) return { success: false, error: 'Restaurant menu item not found' };
+
+    const result = await RestaurantMenuService.updateRestaurantMenuItem(restaurantMenuId, {
+      menuItemId: newMenuItemId
+    } as any);
+
+    revalidatePath('/admin/restaurant-management');
+    if (rm.restaurantId) {
+      revalidatePath(`/admin/restaurant-management/${rm.restaurantId}/edit`);
+    }
+    
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to swap menu item:', error);
+    return { success: false, error: 'Failed to update menu item link' };
+  }
+}
+
+export async function getRestaurantImagePool(
+  restaurantId: string,
+  excludeRestaurantMenuId?: string,
+) {
+  try {
+    const images = await RestaurantMenuService.getRestaurantImagePool(
+      restaurantId,
+      excludeRestaurantMenuId,
+    );
+    return { success: true, data: images };
+  } catch (error) {
+    console.error("Failed to get restaurant image pool:", error);
+    return { success: false, error: "Failed to fetch restaurant image pool", data: [] };
+  }
+}
+
+export async function swapRestaurantMenuImage(
+  restaurantMenuId: string,
+  imageId: string,
+) {
+  try {
+    const rm = await RestaurantMenuService.getRestaurantMenuById(restaurantMenuId);
+    if (!rm) return { success: false, error: "Restaurant menu item not found" };
+
+    const result = await RestaurantMenuService.swapRestaurantMenuImage(
+      restaurantMenuId,
+      imageId,
+    );
+
+    revalidatePath("/admin/restaurant-management");
+    revalidatePath(`/admin/restaurant-management/${rm.restaurantId}/edit`);
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Failed to swap restaurant menu image:", error);
+    return { success: false, error: "Failed to swap restaurant menu image" };
+  }
+}

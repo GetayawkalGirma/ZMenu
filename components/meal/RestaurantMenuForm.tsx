@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui";
 import { X, Upload, ImageIcon } from "lucide-react";
 import {
@@ -10,6 +10,7 @@ import {
   DietaryCategory,
   RestaurantMenu,
 } from "@/lib/types/meal";
+import { RestaurantImagePickerDialog } from "@/components/meal/RestaurantImagePickerDialog";
 
 interface RestaurantMenuFormProps {
   onSubmit: (data: RestaurantMenuFormData) => void;
@@ -50,17 +51,16 @@ export function RestaurantMenuForm({
     initialData?.ingredients?.join(", ") || "",
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(
+    initialData?.imageId || null,
+  );
+  const [imagePreview, setImagePreview] = useState<string>(
+    initialData?.imageUrl ||
+      (initialData?.imageId ? `/api/files/${initialData.imageId}` : ""),
+  );
   const [removeImage, setRemoveImage] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (initialData?.imageUrl) {
-      setImagePreview(initialData.imageUrl);
-    } else if (initialData?.imageId) {
-      setImagePreview(`/api/files/${initialData.imageId}`);
-    }
-  }, [initialData?.imageUrl, initialData?.imageId]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -88,6 +88,7 @@ export function RestaurantMenuForm({
     }
 
     setImageFile(file);
+    setSelectedImageId(null);
     setImagePreview(URL.createObjectURL(file));
     setRemoveImage(false);
     if (errors.image) setErrors((prev) => ({ ...prev, image: "" }));
@@ -95,6 +96,7 @@ export function RestaurantMenuForm({
 
   const handleRemoveImage = () => {
     setImageFile(null);
+    setSelectedImageId(null);
     setImagePreview("");
     setRemoveImage(true);
   };
@@ -129,6 +131,7 @@ export function RestaurantMenuForm({
         .map((s) => s.trim())
         .filter(Boolean),
       image: imageFile || undefined,
+      imageId: selectedImageId || undefined,
       removeImage,
     } as RestaurantMenuFormData);
   };
@@ -140,6 +143,21 @@ export function RestaurantMenuForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <RestaurantImagePickerDialog
+        open={showImagePicker}
+        onOpenChange={setShowImagePicker}
+        restaurantId={restaurantId}
+        title="Choose Menu Item Image from Restaurant Library"
+        currentImageId={selectedImageId}
+        onSelect={(image) => {
+          setImageFile(null);
+          setRemoveImage(false);
+          setSelectedImageId(image.imageId);
+          setImagePreview(image.imageUrl);
+          if (errors.image) setErrors((prev) => ({ ...prev, image: "" }));
+        }}
+      />
+
       {menuItemName && (
         <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
           Customizing: <span className="text-gray-900">{menuItemName}</span>
@@ -383,16 +401,37 @@ export function RestaurantMenuForm({
             </label>
           )}
           {imagePreview && (
-            <label className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-medium cursor-pointer hover:text-blue-700 w-fit">
-              <Upload className="h-3.5 w-3.5" />
-              Replace image
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
+            <div className="flex gap-2 flex-wrap">
+              <label className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-medium cursor-pointer hover:text-blue-700 w-fit">
+                <Upload className="h-3.5 w-3.5" />
+                Replace image
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowImagePicker(true)}
+              >
+                Choose from Restaurant Images
+              </Button>
+            </div>
+          )}
+          {!imagePreview && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImagePicker(true)}
+              className="w-fit"
+            >
+              Choose from Restaurant Images
+            </Button>
           )}
           {errors.image && (
             <p className="text-xs text-red-500">{errors.image}</p>

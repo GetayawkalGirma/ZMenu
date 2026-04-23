@@ -8,6 +8,10 @@ import { Button, Card, CardContent } from "@/components/ui";
 import { Plus, ChevronRight } from "lucide-react";
 import type { MenuItem, RestaurantMenu, RestaurantMenuFormData } from "@/lib/types/meal";
 
+import { useEffect } from "react";
+import { getCategories } from "@/app/admin/restaurant-management/menu-item-actions";
+import type { Category } from "@/lib/types/meal";
+
 interface AddRestaurantMenuProps {
   restaurantId: string;
   existingItems: RestaurantMenu[];
@@ -15,6 +19,7 @@ interface AddRestaurantMenuProps {
   onUpdate?: (id: string, data: RestaurantMenuFormData) => Promise<void>;
   onEdit?: (item: RestaurantMenu) => void;
   onDelete?: (restaurantMenuId: string) => void;
+  onRefresh?: () => void;
   loading?: boolean;
 }
 
@@ -25,6 +30,7 @@ export function AddRestaurantMenu({
   onUpdate,
   onEdit,
   onDelete,
+  onRefresh,
   loading = false,
 }: AddRestaurantMenuProps) {
   const [showForm, setShowForm] = useState(false);
@@ -72,6 +78,10 @@ export function AddRestaurantMenu({
       setSelectedMenuItem(item.menuItem || null);
       setShowForm(true);
     }
+  };
+
+  const handleRefresh = () => {
+    if (onRefresh) onRefresh();
   };
 
   return (
@@ -156,7 +166,9 @@ export function AddRestaurantMenu({
           {existingItems.map((item) => (
             <RestaurantMenuCard
               key={item.id}
+              restaurantId={restaurantId}
               restaurantMenu={item}
+              onChangeCategory={handleRefresh}
               onEdit={() => handleEditItem(item)}
               onDelete={
                 onDelete

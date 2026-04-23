@@ -9,6 +9,7 @@ import type {
   MealFormData,
   RestaurantMenu,
   Category,
+  RestaurantImageOption,
 } from "@/lib/types/meal";
 
 export class MenuItemService {
@@ -360,7 +361,7 @@ export class RestaurantMenuService {
     data: import("@/lib/types/meal").RestaurantMenuFormData,
   ): Promise<RestaurantMenu> {
     try {
-      let imageId: string | undefined | null;
+      let imageId: string | undefined | null = data.imageId;
 
       if (data.image && data.image instanceof File) {
         const buffer = Buffer.from(await data.image.arrayBuffer());
@@ -416,7 +417,7 @@ export class RestaurantMenuService {
         description: data.description,
         foodCategoryType: data.foodCategoryType,
         dietaryCategory: data.dietaryCategory,
-        imageId: imageId || undefined,
+        imageId: imageId === null ? null : imageId,
       });
 
       if ((rm as any).image) {
@@ -536,7 +537,7 @@ export class RestaurantMenuService {
     data: Partial<MealFormData>,
   ): Promise<RestaurantMenu> {
     try {
-      let imageId: string | undefined | null;
+      let imageId: string | undefined | null = (data as any).imageId;
       if (data.image && data.image instanceof File) {
         const buffer = Buffer.from(await data.image.arrayBuffer());
         const uploadedFile = await fileService.uploadFile(
@@ -566,8 +567,9 @@ export class RestaurantMenuService {
           isPopular: data.isPopular,
           isRecommended: data.isRecommended,
           imageUrl: data.imageUrl,
-          imageId: imageId === null ? null : (imageId ?? (data as any).imageId),
+          imageId: imageId === null ? null : imageId,
           sortOrder: data.sortOrder,
+          menuItemId: data.menuItemId,
         });
 
       if ((updatedItem as any).image) {
@@ -647,6 +649,70 @@ export class RestaurantMenuService {
     } catch (error) {
       console.error("Failed to get all restaurant menus:", error);
       throw new Error("Failed to fetch global restaurant menu list");
+    }
+  }
+
+  // Get restaurant menu item by ID
+  static async getRestaurantMenuById(id: string): Promise<RestaurantMenu | null> {
+    try {
+      const rm = await RestaurantMenuRepository.getById(id);
+      if (rm) {
+        if ((rm as any).image) {
+          (rm as any).imageUrl = fileService.getPublicUrl((rm as any).image.path);
+        }
+        if ((rm as any).menuItem?.image) {
+          (rm as any).menuItem.imageUrl = fileService.getPublicUrl(
+            (rm as any).menuItem.image.path,
+          );
+        }
+      }
+      return rm;
+    } catch (error) {
+      console.error("Failed to get restaurant menu item:", error);
+      throw new Error("Failed to fetch restaurant menu item");
+    }
+  }
+
+  static async getRestaurantImagePool(
+    restaurantId: string,
+    excludeRestaurantMenuId?: string,
+  ): Promise<RestaurantImageOption[]> {
+    try {
+      const imagePool = await RestaurantMenuRepository.getRestaurantImagePool(
+        restaurantId,
+        excludeRestaurantMenuId,
+      );
+
+      return imagePool.map((image) => ({
+        ...image,
+        imageUrl: fileService.getPublicUrl(image.imageUrl),
+      }));
+    } catch (error) {
+      console.error("Failed to get restaurant image pool:", error);
+      throw new Error("Failed to fetch restaurant image pool");
+    }
+  }
+
+  static async swapRestaurantMenuImage(
+    restaurantMenuId: string,
+    imageId: string,
+  ): Promise<RestaurantMenu> {
+    try {
+      const restaurantMenu = await RestaurantMenuRepository.updateRestaurantMenuItem(
+        restaurantMenuId,
+        { imageId },
+      );
+
+      if ((restaurantMenu as any).image) {
+        (restaurantMenu as any).imageUrl = fileService.getPublicUrl(
+          (restaurantMenu as any).image.path,
+        );
+      }
+
+      return restaurantMenu;
+    } catch (error) {
+      console.error("Failed to swap restaurant menu image:", error);
+      throw new Error("Failed to swap restaurant menu image");
     }
   }
 }
