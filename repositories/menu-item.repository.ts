@@ -397,6 +397,29 @@ export class RestaurantMenuRepository {
     });
   }
 
+  static async deleteLibraryImage(restaurantId: string, imageId: string): Promise<void> {
+    // 1. Remove from library table
+    await prisma.restaurantImageLibrary.deleteMany({ where: { restaurantId, imageId } });
+
+    // 2. Clear this image from any meal assignments for this restaurant
+    await prisma.restaurantMenu.updateMany({
+      where: { restaurantId, imageId },
+      data: { imageId: null },
+    });
+
+    // 3. Clear from restaurant logo / menu-image if they reference this file
+    const r = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { logoId: true, menuImageId: true },
+    });
+    const patch: { logoId?: null; menuImageId?: null } = {};
+    if (r?.logoId === imageId) patch.logoId = null;
+    if (r?.menuImageId === imageId) patch.menuImageId = null;
+    if (Object.keys(patch).length > 0) {
+      await prisma.restaurant.update({ where: { id: restaurantId }, data: patch });
+    }
+  }
+
   static async getRestaurantImagePool(
     restaurantId: string,
     excludeRestaurantMenuId?: string,

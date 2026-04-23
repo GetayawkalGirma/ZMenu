@@ -359,6 +359,45 @@ export class RestaurantService {
     }
   }
 
+  // Bulk update restaurant and meal images
+  static async bulkUpdateRestaurantImages(params: {
+    restaurantId: string;
+    logoId?: string | null;
+    menuImageId?: string | null;
+    assignments: { restaurantMenuId: string, imageId: string | null }[];
+  }): Promise<ServiceResult<void>> {
+    try {
+      const { restaurantId, logoId, menuImageId, assignments } = params;
+
+      await RestaurantRepository.prisma().$transaction(async (tx) => {
+        // 1. Update Restaurant logo/menu image if provided
+        if (logoId !== undefined || menuImageId !== undefined) {
+          const updateData: any = {};
+          if (logoId !== undefined) updateData.logoId = logoId;
+          if (menuImageId !== undefined) updateData.menuImageId = menuImageId;
+          
+          await tx.restaurant.update({
+            where: { id: restaurantId },
+            data: updateData
+          });
+        }
+
+        // 2. Update Meal assignments
+        for (const assignment of assignments) {
+          await tx.restaurantMenu.update({
+            where: { id: assignment.restaurantMenuId },
+            data: { imageId: assignment.imageId }
+          });
+        }
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("RestaurantService.bulkUpdateRestaurantImages error:", error);
+      return { success: false, error: "Failed to perform bulk image update" };
+    }
+  }
+
   // Search restaurants
   static async searchRestaurants(
     query: string,
@@ -375,6 +414,22 @@ export class RestaurantService {
             ? error.message
             : "Failed to search restaurants",
       };
+    }
+  }
+
+  // Delete image from library
+  static async deleteLibraryImage(restaurantId: string, imageId: string): Promise<ServiceResult<void>> {
+    try {
+      await RestaurantMenuRepository.deleteLibraryImage(restaurantId, imageId);
+      return { success: true };
+    } catch (error: any) {
+      // P2025 = record not found — image was already removed or never in the library
+      // (e.g. it came from the logo/menu-image slot). Treat as success.
+      if (error?.code === "P2025") {
+        return { success: true };
+      }
+      console.error("RestaurantService.deleteLibraryImage error:", error);
+      return { success: false, error: "Failed to delete image from library" };
     }
   }
 

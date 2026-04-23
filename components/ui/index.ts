@@ -28,3 +28,4 @@ export { Badge } from "./Badge";
 export { Skeleton } from "./Skeleton";
 export { StatusDialog } from "./StatusDialog";
 export type { StatusType } from "./StatusDialog";
+export { ConfirmDialog } from "./ConfirmDialog";

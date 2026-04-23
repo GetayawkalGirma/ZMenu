@@ -1,24 +1,24 @@
 // Server Component — no "use client".
-// Fetches restaurant + menu data on the server so the HTML arrives with
-// the restaurant name already rendered (no spinner, no client waterfall).
+// Fetches restaurant, menu, and image pool on the server so the full UI
+// arrives pre-rendered with data — no loading spinner on first paint.
 
-import { getRestaurant } from "../../actions";
-import { getRestaurantMenu } from "../../menu-item-actions";
-import { EditRestaurantClient } from "./EditRestaurantClient";
+import { getRestaurant } from "../../../actions";
+import { getRestaurantMenu, getRestaurantImagePool } from "../../../menu-item-actions";
+import ImageLibraryClient from "./ImageLibraryClient";
 import { Button } from "@/components/ui";
 import Link from "next/link";
 
-export default async function EditRestaurantPage({
+export default async function ImageLibraryPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
 
-  // Both fetches run in parallel on the server — one round trip total.
-  const [restaurantResult, menuResult] = await Promise.all([
+  const [restaurantResult, menuResult, poolResult] = await Promise.all([
     getRestaurant(id),
     getRestaurantMenu(id),
+    getRestaurantImagePool(id),
   ]);
 
   if (!restaurantResult.success || !restaurantResult.data) {
@@ -39,17 +39,12 @@ export default async function EditRestaurantPage({
     );
   }
 
-  const restaurant = restaurantResult.data as any;
-  const menuItems = menuResult.data?.items || [];
-  const initialFeatureIds: string[] =
-    restaurant.features?.map((f: any) => f.feature?.id).filter(Boolean) || [];
-
   return (
-    <EditRestaurantClient
+    <ImageLibraryClient
       restaurantId={id}
-      initialRestaurant={restaurant}
-      initialMenuItems={menuItems}
-      initialFeatureIds={initialFeatureIds}
+      initialRestaurant={restaurantResult.data}
+      initialMenuItems={menuResult.data?.items || []}
+      initialImagePool={poolResult.data || []}
     />
   );
 }

@@ -24,6 +24,10 @@ export interface Restaurant {
 }
 
 export class RestaurantRepository {
+  static prisma() {
+    return prisma;
+  }
+
   // Create restaurant
   static async create(data: CreateRestaurantInput): Promise<Restaurant> {
     const restaurant = await prisma.restaurant.create({
@@ -232,6 +236,10 @@ export class RestaurantRepository {
         { rating: "desc" },
         { createdAt: "desc" }
       ];
+    } else if (sortBy === "created-asc") {
+      orderBy = { createdAt: "asc" };
+    } else if (sortBy === "created-desc") {
+      orderBy = { createdAt: "desc" };
     }
 
     const [items, total] = await Promise.all([

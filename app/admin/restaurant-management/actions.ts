@@ -97,6 +97,7 @@ export async function getPaginatedRestaurants(params: {
   pageSize: number;
   search?: string;
   status?: string;
+  sortBy?: string;
 }) {
   return await RestaurantService.getRestaurantsPaginated(params);
 }
@@ -125,5 +126,36 @@ export async function calculateCoordinates(id: string) {
     return result;
   } catch (error) {
     return { success: false, error: "Failed to calculate coordinates" };
+  }
+}
+
+export async function bulkUpdateRestaurantImages(params: {
+  restaurantId: string;
+  logoId?: string | null;
+  menuImageId?: string | null;
+  assignments: { restaurantMenuId: string, imageId: string | null }[];
+}) {
+  try {
+    const result = await RestaurantService.bulkUpdateRestaurantImages(params);
+    if (result.success) {
+      revalidatePath(`/admin/restaurant-management/${params.restaurantId}`);
+      revalidatePath(`/admin/restaurant-management/${params.restaurantId}/edit`);
+      revalidatePath(`/admin/restaurant-management/${params.restaurantId}/edit/images`);
+    }
+    return result;
+  } catch (error) {
+    return { success: false, error: "Failed to perform bulk update" };
+  }
+}
+
+export async function deleteLibraryImage(restaurantId: string, imageId: string) {
+  try {
+    const result = await RestaurantService.deleteLibraryImage(restaurantId, imageId);
+    if (result.success) {
+      revalidatePath(`/admin/restaurant-management/${restaurantId}/edit/images`);
+    }
+    return result;
+  } catch (error) {
+    return { success: false, error: "Failed to delete library image" };
   }
 }

@@ -53,52 +53,55 @@ export default async function RestaurantViewPage({
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
           {/* Header */}
-          <div className="mb-6 sm:mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-gray-100 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
+          <div className="mb-6 sm:mb-8 flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-gray-100 shadow-sm">
+            {/* Restaurant identity */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left min-w-0">
                 {restaurant.logoUrl ? (
                     <img
                         src={restaurant.logoUrl}
                         alt="Logo"
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-gray-100 shadow-sm"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-gray-100 shadow-sm shrink-0"
                     />
                 ) : (
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-gray-300">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-gray-300 shrink-0">
                         <MapPin className="w-6 h-6 sm:w-8 sm:h-8" />
                     </div>
                 )}
-                <div className="space-y-1 sm:space-y-2">
-                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
-                        <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter uppercase">
+                <div className="space-y-1 sm:space-y-2 min-w-0">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 flex-wrap">
+                        <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tighter uppercase truncate max-w-[280px] sm:max-w-none">
                             {restaurant.name || "Unnamed Restaurant"}
                         </h1>
                         <Badge className={cn(
-                            "px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border-0",
+                            "px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border-0 shrink-0",
                             isPublished ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                         )}>
                             {isPublished ? <Eye className="w-3 h-3 mr-1.5 inline" /> : <EyeOff className="w-3 h-3 mr-1.5 inline" />}
                             {restaurant.status}
                         </Badge>
                     </div>
-                    <p className="text-xs sm:text-gray-400 font-medium flex items-center justify-center sm:justify-start gap-1.5 italic">
-                        <MapPin className="w-3.5 h-3.5" />
+                    <p className="text-xs text-gray-400 font-medium flex items-center justify-center sm:justify-start gap-1.5 italic">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
                         {restaurant.location || "Location not set"}
                     </p>
                 </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full lg:w-auto">
-              <Link href={`/admin/restaurant-management/${restaurant.id}/menu`} className="w-full lg:flex-none order-2 sm:order-1">
-                <Button variant="outline" className="w-full h-10 sm:h-11 px-4 sm:px-6 rounded-xl font-black uppercase tracking-widest text-[8px] sm:text-[10px] border-gray-100 hover:bg-gray-50 flex items-center justify-center gap-2">
+
+            {/* Action buttons — always stay in one row, wrap only if truly needed */}
+            <div className="flex flex-row flex-wrap items-center justify-center xl:justify-end gap-2 shrink-0">
+              <Link href={`/admin/restaurant-management/${restaurant.id}/menu`}>
+                <Button variant="outline" className="h-10 px-4 rounded-xl font-black uppercase tracking-widest text-[10px] border-gray-200 hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap">
                     <Utensils className="w-3.5 h-3.5" />
                     View Menu
                 </Button>
               </Link>
-              <Link href={`/admin/restaurant-management/${restaurant.id}/edit`} className="w-full lg:flex-none order-1 sm:order-2">
-                <Button className="w-full h-10 sm:h-11 px-4 sm:px-6 rounded-xl font-black uppercase tracking-widest text-[8px] sm:text-[10px] bg-gray-900 hover:bg-black text-white shadow-xl shadow-gray-100">
+              <Link href={`/admin/restaurant-management/${restaurant.id}/edit`}>
+                <Button className="h-10 px-4 rounded-xl font-black uppercase tracking-widest text-[10px] bg-gray-900 hover:bg-black text-white whitespace-nowrap">
                     Edit Details
                 </Button>
               </Link>
-              <Link href="/admin/restaurant-management" className="w-full lg:flex-none order-3">
-                <Button variant="outline" className="w-full h-10 sm:h-11 px-4 sm:px-6 rounded-xl font-black uppercase tracking-widest text-[8px] sm:text-[10px] border-gray-100 hover:bg-gray-50">
+              <Link href="/admin/restaurant-management">
+                <Button variant="outline" className="h-10 px-4 rounded-xl font-black uppercase tracking-widest text-[10px] border-gray-200 hover:bg-gray-50 whitespace-nowrap">
                     All Venues
                 </Button>
               </Link>
