@@ -1,0 +1,73 @@
+name: Telegram Seeder
+
+on:
+  schedule:
+    # Every 3 hours
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Run only this channel (leave blank for all)"
+        required: false
+        default: ""
+
+jobs:
+  seed:
+    name: Seed @${{ matrix.channel }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Run channels one at a time to avoid Telegram rate limits
+      max-parallel: 1
+      matrix:
+        channel:
+          - shegergebeta
+          - Foodism11
+          # Add more channels here
+
+    steps:
+      # matrix is not allowed in job-level `if`; gate here instead.
+      - name: Gate (manual single-channel)
+        id: gate
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ -z "${{ github.event.inputs.channel }}" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.inputs.channel }}" = "${{ matrix.channel }}" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+
+      - uses: pnpm/action-setup@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Run seeder for @${{ matrix.channel }}
+        if: steps.gate.outputs.run == 'true'
+        run: npx tsx scripts/seeder/seeder.ts ${{ matrix.channel }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_SESSION: ${{ secrets.TELEGRAM_SESSION }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_API_KEY_2: ${{ secrets.GOOGLE_API_KEY_2 }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
