@@ -13,6 +13,14 @@ const TARGET_CHANNEL = process.argv[2] || process.env.TARGET_CHANNEL || "shegerg
 const OTHER_FOOD_ID = "cmo5f21hk00046pr98jxr6qgc";
 const OTHER_DRINK_ID = "cmo5ezp5z00026pr9cnxjxogp";
 
+/** Raw Telegram `Message` rows per `getMessages` call (not “posts”; albums = multiple rows). */
+const TELEGRAM_MESSAGE_FETCH_LIMIT = Math.min(
+  200,
+  Math.max(10, parseInt(process.env.SEEDER_TELEGRAM_FETCH_LIMIT || "36", 10))
+);
+/** Max post groups sent to Gemini in one request (smaller = gentler on quota / rate limits). */
+const AI_POST_BATCH_SIZE = Math.min(20, Math.max(1, parseInt(process.env.SEEDER_AI_POST_BATCH || "6", 10)));
+
 function getEnvValue(key: string): string {
   if (process.env[key]) return process.env[key]!;
   const externalEnvPath = "/Users/yawkal/Documents/imposter folder/word seeder/.env";
@@ -199,8 +207,8 @@ class FoodismServiceSeeder {
       console.log(`📍 Resuming from Message ID: ${minId || 'Beginning of Channel'}`);
 
       // 2. Fetch messages AFTER our bookmark (moving forward)
-      const messages = await client.getMessages(TARGET_CHANNEL, { 
-          limit: 100, 
+      const messages = await client.getMessages(TARGET_CHANNEL, {
+          limit: TELEGRAM_MESSAGE_FETCH_LIMIT,
           minId: minId,
           reverse: true // This is the key: fetch oldest to newest
       });
@@ -209,6 +217,11 @@ class FoodismServiceSeeder {
           console.log("✨ Channel is fully synced! No new posts.");
           return;
       }
+
+      console.log(
+        `   📨 Fetched ${messages.length} Telegram message row(s) ` +
+        `(limit ${TELEGRAM_MESSAGE_FETCH_LIMIT}; albums count as multiple rows).`
+      );
 
       // Grouping
       const groups = new Map<string, Api.Message[]>();
@@ -236,7 +249,9 @@ class FoodismServiceSeeder {
           })),
       ];
 
-      console.log(`📊 Found ${postsToProcess.length} new post groups to analyze.`);
+      postsToProcess.sort((a, b) => a.postedAt.getTime() - b.postedAt.getTime());
+
+      console.log(`📊 Found ${postsToProcess.length} post group(s) in this fetch.`);
 
       // Prepare data
       // Prepare data using real IDs for robustness
@@ -257,8 +272,16 @@ class FoodismServiceSeeder {
           return;
       }
 
-      console.log(`🤖 Analyzing ${postDataForAI.length} post groups...`);
-      const aiResults = await this.askAIInBatch(postDataForAI, keyedModels);
+      const aiResults: ExtractionResult[] = [];
+      for (let i = 0; i < postDataForAI.length; i += AI_POST_BATCH_SIZE) {
+        const chunk = postDataForAI.slice(i, i + AI_POST_BATCH_SIZE);
+        console.log(
+          `🤖 Analyzing post groups ${i + 1}–${i + chunk.length} of ${postDataForAI.length} ` +
+          `(batch size ${AI_POST_BATCH_SIZE})...`
+        );
+        const part = await this.askAIInBatch(chunk, keyedModels);
+        aiResults.push(...part);
+      }
       
       const postsMap = new Map(postsToProcess.map(p => [p.id, p]));
 
