@@ -35,32 +35,42 @@ export function RestaurantListInfinite({
     setHasMore(initialItems.length < initialTotal);
   }, [initialItems, initialTotal]);
 
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+  const loadingRef = useRef(false);
 
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current || !hasMore) return;
+
+    loadingRef.current = true;
     setLoading(true);
     const nextPage = page + 1;
     
-    const result = await getRestaurantsAction({
-      page: nextPage,
-      pageSize: 6, // 6 items at a time as requested
-      search,
-      categoryNames: categories,
-      featureNames: features,
-      sortBy,
-      // status: "PUBLISHED" is already hardcoded in the server action
-    });
+    try {
+      const result = await getRestaurantsAction({
+        page: nextPage,
+        pageSize: 6,
+        search,
+        categoryNames: categories,
+        featureNames: features,
+        sortBy,
+      });
 
-    if (result.success && result.data) {
-      const newItems = result.data.items;
-      setItems((prev) => [...prev, ...newItems]);
-      setPage(nextPage);
-      setHasMore(items.length + newItems.length < result.data.total);
-    } else {
-      setHasMore(false);
+      if (result.success && result.data) {
+        const newItems = result.data.items;
+        setItems((prev) => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const uniqueNew = newItems.filter(i => !existingIds.has(i.id));
+          return [...prev, ...uniqueNew];
+        });
+        setPage(nextPage);
+        setHasMore(items.length + newItems.length < result.data.total);
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
     }
-    setLoading(false);
-  }, [page, loading, hasMore, search, categories, features, sortBy, items.length]);
+  }, [page, hasMore, search, categories, features, sortBy, items.length]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

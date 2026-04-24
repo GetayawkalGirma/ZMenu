@@ -18,6 +18,7 @@ import { RestaurantFeaturesView } from "@/components/restaurant/RestaurantFeatur
 import { RestaurantMenuFilters } from "@/components/search/RestaurantMenuFilters";
 import { RestaurantMenuInfinite } from "@/components/restaurant/RestaurantMenuInfinite";
 import { Suspense } from "react";
+import { MenuImageUpload } from "./MenuImageUpload";
 
 export const revalidate = 0; // Disable static caching for real-time filters
 
@@ -118,7 +119,7 @@ export default async function PublicRestaurantDetailPage({
       {/* Immersive Header Banner */}
       <div className="relative h-[40vh] sm:h-[64vh] w-full bg-gray-900 overflow-hidden">
         <img 
-          src={restaurant.logoUrl || "https://placehold.co/1200x600?text=ZMenu"} 
+          src={restaurant.logoUrl || "https://placehold.co/1200x600?text=ZDish"} 
           className="w-full h-full object-cover opacity-60 scale-105 blur-sm"
           alt=""
         />
@@ -152,14 +153,18 @@ export default async function PublicRestaurantDetailPage({
                   </div>
                </div>
 
-               <a 
-                 href={directionsUrl} 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 className="flex items-center justify-center bg-gray-900 text-white px-6 sm:px-8 h-12 sm:h-16 rounded-xl sm:rounded-[2rem] font-black uppercase tracking-[0.1em] text-[10px] sm:text-xs hover:bg-blue-600 hover:scale-105 transition-all shadow-2xl shadow-gray-200"
-               >
-                 <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 sm:mr-3" /> Directions
-               </a>
+               <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                 <a 
+                   href={directionsUrl} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="w-full sm:w-auto flex items-center justify-center bg-gray-900 text-white px-6 sm:px-8 h-12 sm:h-16 rounded-xl sm:rounded-[2rem] font-black uppercase tracking-[0.1em] text-[10px] sm:text-xs hover:bg-blue-600 hover:scale-105 transition-all shadow-2xl shadow-gray-200"
+                 >
+                   <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 sm:mr-3" /> Directions
+                 </a>
+
+                 <MenuImageUpload restaurantId={id} />
+               </div>
             </div>
           </div>
         </div>

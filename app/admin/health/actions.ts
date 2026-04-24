@@ -38,7 +38,7 @@ export async function testCloudStorage() {
     const { fileService } = await import("@/services/file/file.service");
     
     // Create a tiny dummy text file
-    const dummyBuffer = Buffer.from("ZMenu Storage Test " + new Date().toISOString());
+    const dummyBuffer = Buffer.from("ZDish Storage Test " + new Date().toISOString());
     const result = await fileService.uploadFile(
       dummyBuffer,
       "health-check-test.txt",

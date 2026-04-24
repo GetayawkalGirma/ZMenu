@@ -177,7 +177,7 @@ export default async function HomePage() {
                     <img
                       src={
                         restaurant.logoUrl ||
-                        "https://placehold.co/600x800?text=ZMenu"
+                        "https://placehold.co/600x800?text=ZDish"
                       }
                       alt={restaurant.name || "Restaurant"}
                       className="w-full h-full object-cover"

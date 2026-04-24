@@ -20,7 +20,7 @@ export default function ApiDocsPage() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>ZMenu API Documentation</h1>
+      <h1>ZDish API Documentation</h1>
       <SwaggerUI spec={spec} />
     </div>
   );
