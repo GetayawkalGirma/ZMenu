@@ -23,27 +23,43 @@ jobs:
           - shegergebeta
           - Foodism11
           # Add more channels here
-    # If a specific channel was requested via manual trigger, skip the others
-    if: >
-      github.event.inputs.channel == '' ||
-      github.event.inputs.channel == matrix.channel
 
     steps:
+      # matrix is not allowed in job-level `if`; gate here instead.
+      - name: Gate (manual single-channel)
+        id: gate
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ -z "${{ github.event.inputs.channel }}" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.inputs.channel }}" = "${{ matrix.channel }}" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
 
       - uses: pnpm/action-setup@v4
+        if: steps.gate.outputs.run == 'true'
         with:
           version: 9
 
       - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
         with:
           node-version: 20
           cache: pnpm
 
       - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Run seeder for @${{ matrix.channel }}
+        if: steps.gate.outputs.run == 'true'
         run: npx tsx scripts/seeder/seeder.ts ${{ matrix.channel }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
