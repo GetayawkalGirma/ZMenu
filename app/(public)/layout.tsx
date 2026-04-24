@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui";
-import { Store, ChefHat, Pizza } from "lucide-react";
+import { Store, ChefHat, Pizza, PlusCircle } from "lucide-react";
 
 export default function PublicLayout({
   children,
@@ -53,6 +53,13 @@ export default function PublicLayout({
                 <Pizza className="w-4 h-4" />
                 <span>Foods</span>
               </Link>
+              <Link
+                href="/add-restaurant"
+                className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl hover:bg-emerald-50 active:scale-95 border border-emerald-200"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Add Restaurant</span>
+              </Link>
             </nav>
 
             {/* Premium Action Button */}
@@ -80,12 +87,18 @@ export default function PublicLayout({
 
       {/* Mobile Bottom Navigation - Strategic Density */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 px-6 py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-         <div className="flex items-center justify-between max-w-sm mx-auto">
+         <div className="flex items-center justify-between max-w-md mx-auto">
             <Link href="/Food" className="flex flex-col items-center gap-1 group">
                <div className="w-10 h-10 rounded-2xl flex items-center justify-center group-active:bg-blue-50 transition-colors">
                   <Pizza className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
                </div>
                <span className="text-[7px] font-black uppercase tracking-widest text-gray-400">Foods</span>
+            </Link>
+            <Link href="/add-restaurant" className="flex flex-col items-center gap-1 group">
+               <div className="w-10 h-10 rounded-2xl flex items-center justify-center group-active:bg-emerald-50 transition-colors">
+                  <PlusCircle className="w-5 h-5 text-emerald-500 group-hover:text-emerald-600" />
+               </div>
+               <span className="text-[7px] font-black uppercase tracking-widest text-emerald-500">Add</span>
             </Link>
             <Link href="/search" className="flex flex-col items-center gap-1 group">
                <div className="w-12 h-12 bg-gray-900 rounded-[1.5rem] flex items-center justify-center -mt-8 shadow-2xl shadow-blue-200 border-4 border-white">
