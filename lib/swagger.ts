@@ -6,7 +6,7 @@ export const getApiDocs = async () => {
     definition: {
       openapi: "3.0.0",
       info: {
-        title: "ZMenu API",
+        title: "ZDish API",
         version: "1.0",
         description: "Restaurant menu management API",
       },

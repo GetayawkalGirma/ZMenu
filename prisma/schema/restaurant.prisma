@@ -27,9 +27,10 @@ model Restaurant {
   updatedAt DateTime @updatedAt
 
   // relations
-  menuItems    RestaurantMenu[]
-  features     RestaurantFeatureAssignment[]
-  imageLibrary RestaurantImageLibrary[]
+  menuItems      RestaurantMenu[]
+  features       RestaurantFeatureAssignment[]
+  imageLibrary   RestaurantImageLibrary[]
+  userFeedbacks  UserFeedback[]
 
   @@schema("restaurant")
 }
@@ -79,5 +80,52 @@ model RestaurantImageLibrary {
 
   @@unique([restaurantId, imageId])
   @@index([restaurantId, updatedAt])
+  @@schema("restaurant")
+}
+
+// =========================
+// USER FEEDBACK / EDIT SUGGESTIONS
+// =========================
+
+enum FeedbackType {
+  MEAL_INFO
+  MENU_IMAGES
+
+  @@schema("restaurant")
+}
+
+enum FeedbackStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@schema("restaurant")
+}
+
+model UserFeedback {
+  id String @id @default(cuid())
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  // Optional: If feedback is for a specific meal
+  restaurantMenuId String?
+  restaurantMenu   RestaurantMenu? @relation(fields: [restaurantMenuId], references: [id])
+
+  type   FeedbackType
+  status FeedbackStatus @default(PENDING)
+
+  // MEAL_INFO specific
+  suggestedPrice           Float?
+  suggestedPortionSize     String? // Using String instead of Enum to avoid cross-schema enum complexity, or we can use the exact PortionSize if we import it. String is safer for raw suggestions.
+  suggestedPreparationTime Int?
+
+  // MENU_IMAGES specific
+  // Store an array of uploaded image URLs or IDs. Since it's temporary, URLs or basic strings are easiest.
+  uploadedImageUrls String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@schema("restaurant")
 }

@@ -65,8 +65,20 @@ export function MainSearchBar({
         setIsSearching(true);
     };
 
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        // On mobile, scroll the search bar to the top so the keyboard doesn't hide it
+        if (window.innerWidth < 768) {
+            const target = e.currentTarget.closest('.search-container-root');
+            if (target) {
+                setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300); // Small delay for keyboard to start appearing
+            }
+        }
+    };
+
     return (
-        <div className={cn("relative flex-1 group", className)}>
+        <div className={cn("relative flex-1 group search-container-root scroll-mt-24 sm:scroll-mt-28", className)}>
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors">
                 {isSearching ? (
                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -79,6 +91,7 @@ export function MainSearchBar({
                 type="text"
                 value={inputValue}
                 onChange={handleChange}
+                onFocus={handleFocus}
                 placeholder={placeholder}
                 className="w-full pl-12 pr-12 py-3 sm:py-4 bg-transparent focus:outline-none font-bold text-xs sm:text-sm text-gray-900 placeholder:text-gray-300 rounded-xl sm:rounded-2xl transition-all"
             />

@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
+  Counter,
 } from "@/components/ui";
 import {
   Search,
@@ -19,9 +20,13 @@ import {
   Layers,
 } from "lucide-react";
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
+import { getDashboardStats } from "./admin/dashboard-data";
 
 export default async function HomePage() {
-  const result = await RestaurantService.getAllRestaurants();
+  const [result, stats] = await Promise.all([
+    RestaurantService.getAllRestaurants(),
+    getDashboardStats(),
+  ]);
   const restaurants = (result.success ? result.data || [] : []).slice(0, 3);
 
   return (
@@ -55,6 +60,36 @@ export default async function HomePage() {
                 A curated directory surfacing the authentic menus, real prices,
                 and hidden gems of the city. No more outdated PDF menus.
               </p>
+
+              {/* Dynamic Stats Badges */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-8">
+                <div className="flex flex-col items-center lg:items-start">
+                  <span className="text-3xl font-black text-gray-900 tracking-tighter uppercase leading-none">
+                    <Counter value={stats.publishedRestaurants} />+
+                  </span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                    Live Venues
+                  </span>
+                </div>
+                <div className="w-px h-10 bg-gray-100 hidden sm:block" />
+                <div className="flex flex-col items-center lg:items-start">
+                  <span className="text-3xl font-black text-gray-900 tracking-tighter uppercase leading-none">
+                    <Counter value={stats.foodListings} />+
+                  </span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                    Unique Meals
+                  </span>
+                </div>
+                <div className="w-px h-10 bg-gray-100 hidden sm:block" />
+                <div className="flex flex-col items-center lg:items-start">
+                  <span className="text-3xl font-black text-gray-900 tracking-tighter uppercase leading-none">
+                    <Counter value={stats.drinkListings} />+
+                  </span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                    Drink Options
+                  </span>
+                </div>
+              </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-6 justify-center lg:justify-start">
                 <Link href="/search">
@@ -117,7 +152,7 @@ export default async function HomePage() {
                 Hand Picked
               </span>
               <h2 className="text-5xl font-black text-gray-900 tracking-tighter uppercase leading-none">
-                Featured <span className="text-gray-300 italic">Partners.</span>
+                Featured <span className="text-gray-300 italic">Venues.</span>
               </h2>
             </div>
             <Link href="/restaurants">
@@ -142,7 +177,7 @@ export default async function HomePage() {
                     <img
                       src={
                         restaurant.logoUrl ||
-                        "https://placehold.co/600x800?text=ZMenu"
+                        "https://placehold.co/600x800?text=ZDish"
                       }
                       alt={restaurant.name || "Restaurant"}
                       className="w-full h-full object-cover"
@@ -214,7 +249,11 @@ export default async function HomePage() {
                 {
                   icon: <CircleDot />,
                   label: "Live Stats",
-                  sub: "Market Rates",
+                  sub: (
+                    <>
+                      <Counter value={stats.totalRestaurantMeals} /> Active Items
+                    </>
+                  ),
                 },
                 {
                   icon: <TrendingUp />,

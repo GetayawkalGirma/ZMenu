@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutDashboard, Utensils, Pizza, Tags, Settings, Activity, Users, Globe } from "lucide-react";
+import { Menu, X, LayoutDashboard, Utensils, Pizza, Tags, Settings, Activity, Users, Globe, MessageSquare } from "lucide-react";
 
 export default function AdminLayout({
   children,
@@ -32,6 +32,7 @@ export default function AdminLayout({
     { name: "Meals", href: "/admin/meals", icon: Pizza },
     { name: "Categories", href: "/admin/categories", icon: Tags },
     { name: "Features", href: "/admin/features-management", icon: Settings },
+    { name: "User Feedback", href: "/admin/feedback", icon: MessageSquare, color: "text-amber-600" },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Settings", href: "/admin/settings", icon: Settings },
     { name: "System Health", href: "/admin/health", icon: Activity, color: "text-blue-600" },

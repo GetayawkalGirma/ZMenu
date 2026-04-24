@@ -94,7 +94,7 @@ export default function AdminLoginPage() {
         </Card>
 
         <p className="text-center text-[10px] text-gray-300 font-black uppercase tracking-[0.2em] pt-4">
-            ZMenu Management System v2.0
+            ZDish Management System v2.0
         </p>
       </div>
     </div>

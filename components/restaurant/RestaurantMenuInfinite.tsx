@@ -42,37 +42,48 @@ export function RestaurantMenuInfinite({
     setHasMore(initialItems.length < initialTotal);
   }, [initialItems, initialTotal]);
 
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+  const loadingRef = useRef(false);
 
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current || !hasMore) return;
+
+    loadingRef.current = true;
     setLoading(true);
     const nextPage = page + 1;
     
-    const result = await getRestaurantMenuAction({
-      restaurantId,
-      page: nextPage,
-      pageSize: 6, // Changed to 6 items per load as requested
-      search,
-      dietaryCategory: dietary,
-      foodCategoryType: types?.[0], // Simplified for now
-      categoryNames: categories,
-      portionSize: portions?.[0], // Fixed: Pass portion filter
-      sortBy,
-      spicyLevel: spicy,
-      minPrice,
-      maxPrice,
-    });
+    try {
+      const result = await getRestaurantMenuAction({
+        restaurantId,
+        page: nextPage,
+        pageSize: 6,
+        search,
+        dietaryCategory: dietary,
+        foodCategoryType: types?.[0],
+        categoryNames: categories,
+        portionSize: portions?.[0],
+        sortBy,
+        spicyLevel: spicy,
+        minPrice,
+        maxPrice,
+      });
 
-    if (result && result.items) {
-      const newItems = result.items;
-      setItems((prev) => [...prev, ...newItems]);
-      setPage(nextPage);
-      setHasMore(items.length + newItems.length < result.total);
-    } else {
-      setHasMore(false);
+      if (result && result.items) {
+        const newItems = result.items;
+        setItems((prev) => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const uniqueNew = newItems.filter(i => !existingIds.has(i.id));
+          return [...prev, ...uniqueNew];
+        });
+        setPage(nextPage);
+        setHasMore(items.length + newItems.length < result.total);
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
     }
-    setLoading(false);
-  }, [page, loading, hasMore, restaurantId, search, dietary, types, categories, portions, sortBy, spicy, minPrice, maxPrice, items.length]);
+  }, [page, hasMore, restaurantId, search, dietary, types, categories, portions, sortBy, spicy, minPrice, maxPrice, items.length]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -106,7 +117,7 @@ export function RestaurantMenuInfinite({
 
   return (
     <div className="space-y-8 sm:space-y-12">
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-8">
         {items.map((rm) => (
           <SuperFoodCard key={rm.id} item={{...rm, restaurant}} />
         ))}

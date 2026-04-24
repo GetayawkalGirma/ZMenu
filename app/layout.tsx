@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ZMenu - Restaurant Menu Discovery",
+  title: "ZDish - Restaurant Menu Discovery",
   description:
     "Discover restaurants and their menus with detailed meal information, pricing, and portion sizes.",
 };

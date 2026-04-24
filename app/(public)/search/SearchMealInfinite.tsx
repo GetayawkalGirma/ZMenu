@@ -41,34 +41,45 @@ export function SearchMealInfinite({
     setHasMore(initialItems.length < initialTotal);
   }, [initialItems, initialTotal, queryString]);
 
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+  const loadingRef = useRef(false);
 
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current || !hasMore) return;
+
+    loadingRef.current = true;
     setLoading(true);
     const nextPage = page + 1;
 
-    const result = await getMenuItemsAction({
-      page: nextPage,
-      pageSize: 9,
-      search,
-      categoryNames: categories,
-      foodCategoryTypes: types,
-      nearMe,
-      userLat,
-      userLng,
-    });
+    try {
+      const result = await getMenuItemsAction({
+        page: nextPage,
+        pageSize: 9,
+        search,
+        categoryNames: categories,
+        foodCategoryTypes: types,
+        nearMe,
+        userLat,
+        userLng,
+      });
 
-    if (result && result.items) {
-      setItems((prev) => [...prev, ...result.items]);
-      setPage(nextPage);
-      setHasMore(items.length + result.items.length < result.total);
-    } else {
-      setHasMore(false);
+      if (result && result.items) {
+        const newItems = result.items;
+        setItems((prev) => {
+          const existingIds = new Set(prev.map((i) => i.id));
+          const uniqueNew = newItems.filter((i) => !existingIds.has(i.id));
+          return [...prev, ...uniqueNew];
+        });
+        setPage(nextPage);
+        setHasMore(items.length + result.items.length < result.total);
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
     }
-    setLoading(false);
   }, [
     page,
-    loading,
     hasMore,
     search,
     categories,

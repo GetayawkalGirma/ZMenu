@@ -96,16 +96,16 @@ export function MealCard({ meal, onEdit, onDelete, showActions = true }: any) {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-1 sm:gap-6">
-                <h3 className="text-[10px] sm:text-2xl font-black text-gray-900 leading-tight tracking-tighter uppercase group-hover:text-indigo-600 transition-colors flex-1 sm:line-clamp-none line-clamp-2 overflow-hidden">
+              <div className="space-y-3">
+                <h3 className="text-[10px] sm:text-2xl font-black text-gray-900 leading-tight tracking-tighter uppercase group-hover:text-indigo-600 transition-colors sm:line-clamp-none line-clamp-2 overflow-hidden">
                   {meal.restName || meal.name}
                 </h3>
 
-                <div className="px-1.5 py-0.5 sm:px-5 sm:py-3 bg-zinc-900 text-white rounded-md sm:rounded-2xl shadow-lg group-hover:bg-indigo-600 transition-all duration-500 flex flex-col items-end shrink-0">
-                  <span className="text-[6px] sm:text-[9px] font-black opacity-50 uppercase tracking-widest leading-none mb-0.5 sm:mb-1.5 hidden sm:block">
+                <div className="inline-flex flex-col px-2 py-1 sm:px-3.5 sm:py-2 bg-zinc-900 text-white rounded-lg sm:rounded-xl shadow-lg group-hover:bg-indigo-600 transition-all duration-500 shrink-0">
+                  <span className="text-[6px] sm:text-[8px] font-black opacity-50 uppercase tracking-widest leading-none mb-0.5 sm:mb-1 hidden sm:block">
                     {isGlobal ? "Value Range" : "Price"}
                   </span>
-                  <span className="text-[9px] sm:text-lg font-black tracking-tighter whitespace-nowrap">
+                  <span className="text-[9px] sm:text-base font-black tracking-tighter whitespace-nowrap">
                     {displayPrice}
                   </span>
                 </div>

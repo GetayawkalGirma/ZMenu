@@ -22,7 +22,7 @@ export default function PublicLayout({
               </div>
               <div className="flex flex-col">
                 <span className="text-sm sm:text-xl font-black text-gray-900 leading-none">
-                  Menu
+                  Dish
                 </span>
                 <span className="text-[7px] sm:text-[10px] font-black text-blue-600 uppercase tracking-widest mt-0.5 hidden xs:block">
                   Directory
@@ -64,6 +64,14 @@ export default function PublicLayout({
 
             {/* Premium Action Button */}
             <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link href="/add-restaurant" className="flex md:hidden">
+                <Button
+                  variant="ghost"
+                  className="w-9 h-9 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-95 border border-emerald-100 p-0"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                </Button>
+              </Link>
               <Link href="/admin">
                 <Button
                   variant="ghost"
@@ -94,12 +102,6 @@ export default function PublicLayout({
                </div>
                <span className="text-[7px] font-black uppercase tracking-widest text-gray-400">Foods</span>
             </Link>
-            <Link href="/add-restaurant" className="flex flex-col items-center gap-1 group">
-               <div className="w-10 h-10 rounded-2xl flex items-center justify-center group-active:bg-emerald-50 transition-colors">
-                  <PlusCircle className="w-5 h-5 text-emerald-500 group-hover:text-emerald-600" />
-               </div>
-               <span className="text-[7px] font-black uppercase tracking-widest text-emerald-500">Add</span>
-            </Link>
             <Link href="/search" className="flex flex-col items-center gap-1 group">
                <div className="w-12 h-12 bg-gray-900 rounded-[1.5rem] flex items-center justify-center -mt-8 shadow-2xl shadow-blue-200 border-4 border-white">
                   <ChefHat className="w-5 h-5 text-white" />
@@ -128,7 +130,7 @@ export default function PublicLayout({
                   </span>
                 </div>
                 <span className="text-2xl font-black text-gray-900 tracking-tighter">
-                  ZMenu
+                  ZDish
                 </span>
               </Link>
               <p className="text-gray-500 text-lg font-medium leading-relaxed max-w-sm">
@@ -207,7 +209,7 @@ export default function PublicLayout({
           {/* Legal Footer */}
           <div className="border-t border-gray-100 mt-16 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">
-              © 2026 ZMenu — Real Food. Real Prices.
+              © 2026 ZDish — Real Food. Real Prices.
             </p>
             <div className="flex items-center space-x-8">
               <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center">
@@ -221,7 +223,7 @@ export default function PublicLayout({
 
       {/* Very Compact Mobile Footer - Legal Only */}
       <footer className="md:hidden bg-white px-4 pb-32 pt-8 border-t border-gray-50 text-center">
-         <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">© 2026 ZMenu Directory</p>
+         <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">© 2026 ZDish Directory</p>
       </footer>
     </div>
   );

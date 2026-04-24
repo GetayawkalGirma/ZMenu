@@ -83,16 +83,19 @@ export default async function RestaurantsPage({
                   </Button>
                 </div>
                 
-                {/* Mobile Filter Trigger */}
-                <div className="md:hidden">
-                   <RestaurantFilters 
+                  {/* Mobile Filter Trigger */}
+                  <div className="lg:hidden">
+                    <RestaurantFilters 
                       trigger={
-                        <Button variant="outline" className="h-12 w-12 p-0 rounded-xl border-gray-100 bg-white shadow-xl shadow-blue-50 flex items-center justify-center hover:bg-gray-50 transition-all">
-                           <Filter className="w-5 h-5 text-gray-900" />
+                        <Button
+                          variant="outline"
+                          className="h-12 w-12 sm:h-14 sm:w-14 p-0 rounded-2xl border-gray-100 bg-white shadow-xl shadow-blue-50 flex items-center justify-center hover:bg-gray-50 transition-all"
+                        >
+                          <Filter className="w-5 h-5 text-gray-900" />
                         </Button>
                       } 
-                   />
-                </div>
+                    />
+                  </div>
               </div>
             </div>
           </div>
