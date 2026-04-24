@@ -64,6 +64,14 @@ export default function PublicLayout({
 
             {/* Premium Action Button */}
             <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link href="/add-restaurant" className="flex md:hidden">
+                <Button
+                  variant="ghost"
+                  className="w-9 h-9 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 active:scale-95 border border-emerald-100 p-0"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                </Button>
+              </Link>
               <Link href="/admin">
                 <Button
                   variant="ghost"
@@ -93,12 +101,6 @@ export default function PublicLayout({
                   <Pizza className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
                </div>
                <span className="text-[7px] font-black uppercase tracking-widest text-gray-400">Foods</span>
-            </Link>
-            <Link href="/add-restaurant" className="flex flex-col items-center gap-1 group">
-               <div className="w-10 h-10 rounded-2xl flex items-center justify-center group-active:bg-emerald-50 transition-colors">
-                  <PlusCircle className="w-5 h-5 text-emerald-500 group-hover:text-emerald-600" />
-               </div>
-               <span className="text-[7px] font-black uppercase tracking-widest text-emerald-500">Add</span>
             </Link>
             <Link href="/search" className="flex flex-col items-center gap-1 group">
                <div className="w-12 h-12 bg-gray-900 rounded-[1.5rem] flex items-center justify-center -mt-8 shadow-2xl shadow-blue-200 border-4 border-white">

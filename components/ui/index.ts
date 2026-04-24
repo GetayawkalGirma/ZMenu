@@ -29,3 +29,4 @@ export { Skeleton } from "./Skeleton";
 export { StatusDialog } from "./StatusDialog";
 export type { StatusType } from "./StatusDialog";
 export { ConfirmDialog } from "./ConfirmDialog";
+export { Counter } from "./Counter";

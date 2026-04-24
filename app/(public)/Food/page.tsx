@@ -81,14 +81,31 @@ export default async function FoodDiscoveryPage({
             </div>
 
             <div className="w-full md:w-auto pb-4">
-               <div className="bg-white p-2 rounded-[2rem] shadow-2xl shadow-indigo-100 border border-indigo-50 flex items-center group focus-within:ring-4 focus-within:ring-indigo-50 transition-all">
-                  <MainSearchBar 
-                    placeholder="Search dishes..." 
-                    className="w-full md:w-80 lg:w-96"
-                  />
-                  <Button size="lg" className="hidden sm:inline-flex bg-indigo-600 hover:bg-indigo-700 rounded-2xl px-10 h-14 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-200">
-                    Find
-                  </Button>
+               <div className="flex items-center gap-2">
+                  <div className="bg-white p-2 flex-1 rounded-[2rem] shadow-2xl shadow-indigo-100 border border-indigo-50 flex items-center group focus-within:ring-4 focus-within:ring-indigo-50 transition-all">
+                     <MainSearchBar 
+                       placeholder="Search dishes..." 
+                       className="w-full md:w-80 lg:w-96"
+                     />
+                     <Button size="lg" className="hidden sm:inline-flex bg-indigo-600 hover:bg-indigo-700 rounded-2xl px-10 h-14 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-200">
+                       Find
+                     </Button>
+                  </div>
+
+                  {/* Mobile Filter Trigger */}
+                  <div className="lg:hidden">
+                    <RestaurantMenuFilters 
+                      isGlobal={true}
+                      trigger={
+                        <Button
+                          variant="outline"
+                          className="h-12 w-12 sm:h-14 sm:w-14 p-0 rounded-2xl border-gray-100 bg-white shadow-xl shadow-indigo-50 flex items-center justify-center hover:bg-gray-50 transition-all"
+                        >
+                          <Filter className="w-5 h-5 text-indigo-600" />
+                        </Button>
+                      } 
+                    />
+                  </div>
                </div>
             </div>
           </div>
@@ -112,19 +129,6 @@ export default async function FoodDiscoveryPage({
               <div className="flex items-center gap-4">
                 <div className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-widest">
                   Live Index
-                </div>
-                
-                {/* Mobile Filter Trigger */}
-                <div className="lg:hidden">
-                  <RestaurantMenuFilters 
-                    isGlobal={true}
-                    trigger={
-                      <Button variant="outline" className="h-8 px-3 rounded-lg border-gray-100 bg-white shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-all text-[8px] font-black uppercase tracking-widest">
-                        <Filter className="w-3.5 h-3.5 text-indigo-600" />
-                        Filters
-                      </Button>
-                    } 
-                  />
                 </div>
               </div>
 

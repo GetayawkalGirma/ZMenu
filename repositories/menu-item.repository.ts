@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, MenuCategory as PrismaMenuCategory } from "@prisma/client";
 import type {
   MenuItem,
   RestaurantMenu,
@@ -289,7 +289,14 @@ export class MenuItemRepository {
     }
 
     if (foodCategoryTypes && foodCategoryTypes.length > 0) {
-      where.type = { in: foodCategoryTypes };
+      // Workaround: Prisma driver adapter doesn't properly qualify multi-schema enum types.
+      // Cast the enum column to text so we compare text=text, bypassing the enum type system.
+      const placeholders = foodCategoryTypes.map((_, i) => `$${i + 1}`).join(', ');
+      const matchingIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
+        `SELECT "id" FROM menu."MenuItem" WHERE "type"::text IN (${placeholders})`,
+        ...foodCategoryTypes
+      );
+      where.id = { in: matchingIds.map(r => r.id) };
     }
 
     const restaurantFilters: any = {};

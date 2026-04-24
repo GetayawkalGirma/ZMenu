@@ -144,21 +144,32 @@ export function RestaurantFilters({ trigger }: { trigger?: React.ReactNode }) {
     );
   };
 
+  const [geoLoading, setGeoLoading] = useState(false);
+
   const handleNearMeToggle = (checked: boolean) => {
     if (checked) {
       if ("geolocation" in navigator) {
+        setGeoLoading(true);
+        // Optimistically show the toggle as active while loading
+        setNearMe(true);
         navigator.geolocation.getCurrentPosition(
           (position) => {
             setCoords({
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             });
-            setNearMe(true);
+            setGeoLoading(false);
           },
           (error) => {
             console.error("Geolocation error:", error);
             alert("Could not get your location. Please enable location services.");
             setNearMe(false);
+            setGeoLoading(false);
+          },
+          {
+            enableHighAccuracy: false, // Faster — uses WiFi/cell instead of GPS
+            timeout: 8000,
+            maximumAge: 300000, // Cache location for 5 minutes
           }
         );
       } else {
@@ -190,16 +201,23 @@ export function RestaurantFilters({ trigger }: { trigger?: React.ReactNode }) {
                 nearMe ? "bg-white/20" : "bg-indigo-50",
               )}
             >
-              <MapPin
-                className={cn(
-                  "w-4 h-4",
-                  nearMe ? "text-white" : "text-indigo-600",
-                )}
-              />
+              {geoLoading ? (
+                <div className={cn(
+                  "w-4 h-4 border-2 rounded-full animate-spin",
+                  nearMe ? "border-white/30 border-t-white" : "border-indigo-200 border-t-indigo-600"
+                )} />
+              ) : (
+                <MapPin
+                  className={cn(
+                    "w-4 h-4",
+                    nearMe ? "text-white" : "text-indigo-600",
+                  )}
+                />
+              )}
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-                Near Me
+                {geoLoading ? "Locating..." : "Near Me"}
               </span>
               <span
                 className={cn(
@@ -207,13 +225,14 @@ export function RestaurantFilters({ trigger }: { trigger?: React.ReactNode }) {
                   nearMe ? "text-indigo-100" : "text-gray-400",
                 )}
               >
-                Show closest results
+                {geoLoading ? "Getting your GPS position" : "Show closest results"}
               </span>
             </div>
           </div>
           <Checkbox
             checked={nearMe}
             onCheckedChange={handleNearMeToggle}
+            disabled={geoLoading}
             className={cn(
               "border-2",
               nearMe

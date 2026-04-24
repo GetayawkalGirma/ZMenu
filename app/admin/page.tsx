@@ -14,6 +14,7 @@ import {
   HardDrive,
 } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
+import { Counter } from "@/components/ui";
 import {
   getDashboardStats,
   getRecentRestaurants,
@@ -133,7 +134,9 @@ export default async function AdminDashboard() {
                 {stat.hint}
               </span>
             </div>
-            <div className="text-xl sm:text-3xl font-black text-gray-900">{stat.value}</div>
+            <div className="text-xl sm:text-3xl font-black text-gray-900">
+              <Counter value={stat.value} />
+            </div>
             <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
               {stat.label}
             </div>
