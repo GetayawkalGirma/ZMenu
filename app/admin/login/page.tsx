@@ -17,14 +17,10 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError(false);
 
-    // Dummy delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
     if (password === "admin") {
       // Set a dummy cookie
       document.cookie = "admin_session=authenticated; path=/; max-age=86400; SameSite=Strict";
       router.push("/admin");
-      router.refresh();
     } else {
       setError(true);
       setLoading(false);

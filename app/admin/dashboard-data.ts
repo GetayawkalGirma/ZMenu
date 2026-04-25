@@ -60,10 +60,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     prisma.restaurantMenu.count({ where: { foodCategoryType: "DRINK" } }),
     prisma.category.count(),
     prisma.file.count({
-      where: { mimeType: { startsWith: "image/", mode: "insensitive" } },
+      where: { mimeType: { startsWith: "image/" } },
     }),
     prisma.file.aggregate({
-      where: { mimeType: { startsWith: "image/", mode: "insensitive" } },
+      where: { mimeType: { startsWith: "image/" } },
       _sum: { size: true },
     }),
     prisma.file.aggregate({ _sum: { size: true } }),
@@ -149,4 +149,29 @@ export async function getRecentMenuUpdates(limit = 6): Promise<RecentMenuUpdateR
     price: r.price,
     timeAgo: formatTimeAgo(r.updatedAt),
   }));
+}
+export async function getPublicStats() {
+  try {
+    const [publishedRestaurants, foodListings, drinkListings, totalRestaurantMeals] = await Promise.all([
+      prisma.restaurant.count({ where: { status: "PUBLISHED" } }),
+      prisma.restaurantMenu.count({ where: { foodCategoryType: "FOOD" } }),
+      prisma.restaurantMenu.count({ where: { foodCategoryType: "DRINK" } }),
+      prisma.restaurantMenu.count(),
+    ]);
+
+    return {
+      publishedRestaurants,
+      foodListings,
+      drinkListings,
+      totalRestaurantMeals,
+    };
+  } catch (error) {
+    console.error("Error getting public stats:", error);
+    return {
+      publishedRestaurants: 0,
+      foodListings: 0,
+      drinkListings: 0,
+      totalRestaurantMeals: 0,
+    };
+  }
 }

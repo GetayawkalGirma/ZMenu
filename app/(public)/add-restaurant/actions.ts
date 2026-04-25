@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
 import { MenuItemService, RestaurantMenuService } from "@/services/menu-item/menu-item.service";
 import { createRestaurantSchema } from "@/lib/validations/restaurant.validation";
+import { PublicSubmissionService } from "@/services/restaurant/public-submission.service";
 
 /**
  * Search global menu items for the public meal search
@@ -31,16 +32,18 @@ export async function searchGlobalMenuItems(query: string) {
 
 /**
  * Bulk submit: Creates a restaurant and all its menu items in one go.
- * This is called when the user clicks "Upload Everything".
  */
 export async function bulkSubmitRestaurant(formData: FormData) {
   try {
     // 1. Extract restaurant fields
     const name = formData.get("name") as string;
     const location = formData.get("location") as string;
+    const geoLocation = formData.get("geoLocation") as string | null;
     const logo = formData.get("logo") as File | null;
     const menuImage = formData.get("menuImage") as File | null;
+    const menuImages = formData.getAll("menuImages") as File[];
     const sourceInfoJson = formData.get("sourceInfo") as string | null;
+    
     let sourceInfo = {};
     if (sourceInfoJson) {
       try { sourceInfo = JSON.parse(sourceInfoJson); } catch {}
@@ -50,89 +53,42 @@ export async function bulkSubmitRestaurant(formData: FormData) {
     createRestaurantSchema.parse({
       name,
       location,
+      geoLocation: geoLocation || undefined,
       status: "DRAFT",
     });
 
-    // 2. Create the restaurant
-    const restaurantResult = await RestaurantService.createRestaurant({
+    // 2. Parse meals JSON
+    const mealsJson = formData.get("meals") as string;
+    let meals: any[] = [];
+    if (mealsJson) {
+      try { meals = JSON.parse(mealsJson); } catch {}
+    }
+
+    // 3. Map meal images from formData
+    const mealImagesMap = new Map<string, File>();
+    meals.forEach((meal) => {
+      const file = formData.get(`mealImage_${meal.localId}`) as File | null;
+      if (file && file.size > 0) {
+        mealImagesMap.set(meal.localId, file);
+      }
+    });
+
+    // 4. Delegate to specialized PublicSubmissionService
+    const result = await PublicSubmissionService.submitRestaurant({
       name,
       location,
-      status: "DRAFT",
+      geoLocation: geoLocation || undefined,
       logo: logo && logo.size > 0 ? logo : undefined,
       menuImage: menuImage && menuImage.size > 0 ? menuImage : undefined,
+      menuImages: menuImages.filter(f => f.size > 0),
       sourceInfo,
+      meals,
+      mealImages: mealImagesMap,
     });
-
-    if (!restaurantResult.success || !restaurantResult.data) {
-      return { success: false, error: restaurantResult.error || "Failed to create restaurant" };
-    }
-
-    const restaurantId = restaurantResult.data.id;
-
-    // 3. Parse meals JSON from formData
-    const mealsJson = formData.get("meals") as string;
-    let meals: Array<{
-      menuItemId: string;
-      name: string;
-      price: number;
-      foodCategoryType?: string;
-      dietaryCategory?: string;
-      portionSize?: string;
-      spicyLevel?: number;
-      description?: string;
-      ingredients?: string[];
-    }> = [];
-
-    if (mealsJson) {
-      try {
-        meals = JSON.parse(mealsJson);
-      } catch {
-        console.error("Failed to parse meals JSON");
-      }
-    }
-
-    // 4. Link each meal to the restaurant
-    let linkedCount = 0;
-    for (const meal of meals) {
-      try {
-        // Also handle per-meal images
-        const mealImageKey = `mealImage_${meal.menuItemId}`;
-        const mealImage = formData.get(mealImageKey) as File | null;
-
-        await RestaurantMenuService.linkMenuItemToRestaurant({
-          restaurantId,
-          menuItemId: meal.menuItemId,
-          name: meal.name,
-          price: meal.price,
-          foodCategoryType: meal.foodCategoryType as any,
-          dietaryCategory: meal.dietaryCategory as any,
-          portionSize: meal.portionSize as any,
-          spicyLevel: meal.spicyLevel,
-          description: meal.description,
-          ingredients: meal.ingredients || [],
-          isAvailable: true,
-          isPopular: false,
-          isRecommended: false,
-          image: mealImage && mealImage.size > 0 ? mealImage : undefined,
-        });
-        linkedCount++;
-      } catch (err) {
-        console.error(`Failed to link meal ${meal.name}:`, err);
-      }
-    }
-
-    revalidatePath("/restaurants");
-    revalidatePath("/Food");
-    revalidatePath("/search");
 
     return {
       success: true,
-      data: {
-        restaurantId,
-        restaurantName: name,
-        mealsLinked: linkedCount,
-        totalMeals: meals.length,
-      },
+      data: result,
     };
   } catch (error: any) {
     console.error("Bulk submit failed:", error);
