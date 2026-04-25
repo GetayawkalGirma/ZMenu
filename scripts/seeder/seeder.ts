@@ -53,7 +53,7 @@ const AI_POST_BATCH_SIZE = Math.min(
 
 interface ExtractionResult {
   postId: string;
-  restaurant: { name: string; location: string } | null;
+  restaurant: { name: string; location: string; googleMapsLink?: string } | null;
   meals: Array<{
     name: string;
     price: number;
@@ -602,21 +602,260 @@ class FoodismServiceSeeder {
     const prompt = `
 Extract restaurant and menu data from these ${posts.length} Telegram posts.
 
-CRITICAL:
-- You MUST return the "postId" exactly as provided in the input for each restaurant.
-- Ignore posts that do not clearly describe one restaurant with menu items.
-- Return ONLY a JSON array.
+These posts usually describe exactly ONE restaurant and several meals/items sold by that restaurant.
 
-OUTPUT FORMAT:
+Your job:
+For each input post, decide whether it contains enough reliable restaurant + menu information to be seeded into a restaurant website.
+If yes, return one structured object for that post.
+If no, omit that post entirely from the output.
+
+CRITICAL OUTPUT RULES:
+- Return ONLY a valid JSON array.
+- Do NOT return markdown.
+- Do NOT wrap the JSON in backticks.
+- Do NOT include explanations.
+- You MUST return the "postId" exactly as provided in the input.
+- If a post is not good enough, do NOT return an object for it.
+
+==================================================
+WHAT COUNTS AS A VALID POST
+==================================================
+
+A post is valid only if it clearly contains:
+1. ONE restaurant/place/business name
+2. A usable location/address line
+3. At least ONE meal/item name
+4. At least ONE numeric price in ETB for a meal/item
+
+If any of the above is missing or too unclear, omit the post.
+
+IMPORTANT:
+- A Google Maps link is helpful and should strengthen confidence.
+- If a Google Maps link exists, extract it into the output.
+- If the location text is already clear enough, the post can still be valid even without a map link.
+- Ignore promotional lines, recommendations, hashtags, service notes, parking notes, family notes, and general comments unless they help identify the restaurant name or location.
+
+==================================================
+HOW TO IDENTIFY THE RESTAURANT NAME
+==================================================
+
+Telegram food-channel posts often use emojis inconsistently.
+
+Common patterns:
+- 📍 Restaurant name
+- 📌 Location
+- or the reverse:
+- 📌 Restaurant name
+- 📍 Location
+
+You must infer the difference intelligently.
+
+Use these rules:
+
+1. The restaurant name is usually:
+   - shorter than the address
+   - a business/place name
+   - often appears near the beginning or near the meal list
+   - often does NOT contain long directional/address detail
+   - examples:
+     - "DOK restaurant"
+     - "Reboot coffee"
+     - "Sapore"
+     - "Kin Burger"
+     - "Terefe siga bet"
+
+2. The location/address is usually:
+   - longer and more descriptive
+   - contains landmarks, districts, roads, "beside", "around", "in front of", "behind", "next to", etc.
+   - examples:
+     - "Megenagna, Top view"
+     - "4kilo, beside post office"
+     - "Bole, Around Alem cinema the old Angla burger area"
+     - "Meskel flower, infront of nazra hotel"
+     - "Summit Fiyel bet, behind Chanoly noodles. In front of Bami bistro or next Tadesse Asa bet."
+
+3. VERY IMPORTANT:
+   - If you are unsure which nearby field is the restaurant name and which is the location, the restaurant name is usually the one that appears FIRST, and the location usually comes AFTER it.
+   - This is not an absolute rule, but when the post is ambiguous, prefer the interpretation where the first business-like phrase is the restaurant name and the following longer landmark-like phrase is the location.
+
+4. If both 📍 and 📌 appear:
+   - the shorter business-like phrase is usually the restaurant name
+   - the longer landmark-rich phrase is usually the location
+   - do NOT blindly trust the emoji alone
+
+5. If the restaurant name appears in plain text outside the markers, but the marked field is clearly the location, use the plain-text restaurant name.
+
+6. Only return a restaurant name if it looks like a real restaurant/place/business name.
+   Do not mistake a pure area name, landmark, or neighborhood for the restaurant name.
+
+==================================================
+HOW TO IDENTIFY LOCATION AND MAP LINK
+==================================================
+
+Location/map signals include:
+- "Google map link"
+- "Tap here for map"
+- maps.app.goo.gl links
+- "around", "beside", "behind", "in front of", "next to"
+
+Rules:
+1. Extract the best usable human-readable location text into "location".
+2. If there is a Google Maps or maps.app.goo.gl link, extract it into "googleMapsLink".
+3. If there are multiple links, choose the one that is clearly the restaurant map link.
+4. If no map link exists, set "googleMapsLink" to an empty string.
+
+==================================================
+HOW TO IDENTIFY MEALS
+==================================================
+
+Meal lines usually look like:
+- Chicken salad - 1250 ETB
+- Wild West BBQ - 1450 ETB
+- Vegan lasagna - 899 ETB
+- 🍴Grilled chicken burger : 590 ETB
+- 🍴 Combo
+  💵 3400 (VAT included)
+
+Meal extraction rules:
+1. Extract item name and numeric price.
+2. Remove emojis like 🍴 or other decorative symbols from meal names.
+3. Normalize price to a number only.
+   - "1250 ETB" -> 1250
+   - "3400 (VAT included)" -> 3400
+4. Ignore lines that are not actual menu items.
+5. If one item has a name on one line and the price on the next line, combine them if they clearly belong together.
+6. Ignore VAT/service-charge notes unless they are needed to read the number.
+7. Keep the meal name as close as possible to the original wording.
+
+==================================================
+FOOD DESCRIPTIONS
+==================================================
+
+Each meal object should include a "description" field.
+
+Description rules:
+1. If the post itself gives a clear item-specific description, use a short cleaned version of that.
+2. If the post does NOT provide a description, but you clearly know what the food is from general knowledge, generate a short, plain, helpful description of the item.
+3. Keep descriptions short, natural, and generic.
+4. Do NOT invent special ingredients, sauces, sizes, or preparation details unless they are obvious from the meal name itself.
+5. Do NOT hallucinate restaurant-specific claims.
+6. If you are not confident what the item is, use an empty string.
+
+Good examples:
+- "Lasagna" -> "Layered pasta baked with sauce and filling."
+- "Chicken salad" -> "Fresh salad topped with chicken."
+- "Steak sandwich" -> "Sandwich filled with sliced steak."
+- "Pancake" -> "Soft flat cake usually served as a sweet breakfast item."
+- "Crepes" -> "Thin pancakes that can be served with sweet or savory fillings."
+- "Burger combo" -> "Combo meal centered around a burger, often served with sides."
+- "Fish gulash" -> "Fish-based stew or sauce dish."
+
+Bad examples:
+- "The most delicious burger in Addis with secret sauce."
+- "Premium imported Italian pasta with organic cheese."
+- Any made-up claim not supported by the name or post.
+
+==================================================
+FOOD VS DRINK
+==================================================
+
+Set "type":
+- "DRINK" only if the item is clearly a beverage
+- otherwise use "FOOD"
+
+If unsure, default to "FOOD".
+
+==================================================
+DIETARY CATEGORY
+==================================================
+
+Set "dietaryCategory":
+- "YETSOM" only if the item is clearly fasting/vegan/vegetarian in the Ethiopian context
+- "YEFITSIK" if it includes meat, chicken, beef, fish, cheese, cream, or is clearly non-fasting
+- If uncertain, infer from the item name as best as possible
+
+Examples:
+- Vegan lasagna -> YETSOM
+- Pasta alla Norma -> likely YETSOM unless text suggests otherwise
+- Fish gulash -> YEFITSIK
+- Chicken burger -> YEFITSIK
+- BBQ cheese and beef burger -> YEFITSIK
+
+==================================================
+WHAT TO IGNORE
+==================================================
+
+Ignore these unless needed for restaurant/location detection:
+- recommendation statements
+- review/opinion lines
+- "available on beu"
+- "24 hours service"
+- phone numbers
+- parking info
+- kids area
+- hashtags
+- @channel tags
+- portion notes
+- generic tips
+- "check them out"
+- "best place for gatherings"
+
+==================================================
+CONFIDENCE RULE
+==================================================
+
+Only return a result if you are reasonably confident that:
+- the post refers to one real restaurant/place
+- the restaurant name is identified correctly
+- the location is identified correctly enough to be useful
+- at least one meal and price are extracted correctly
+
+If the post is ambiguous, incomplete, or mixes multiple places, omit it.
+
+When ambiguous, prefer precision over guessing.
+
+==================================================
+SPECIAL NOTES FOR THESE CHANNELS
+==================================================
+
+The channels may look like this:
+
+Example style 1:
+- meal lines first
+- then restaurant name
+- then address
+- then map link
+
+Example style 2:
+- restaurant intro sentence first
+- then restaurant name/location
+- then meals
+- then map link
+
+Example style 3:
+- one item may appear on one line
+- price may appear on the next line
+
+You must handle all of these.
+
+==================================================
+RETURN FORMAT
+==================================================
+
+Return ONLY:
 [
   {
-    "postId": "string",
-    "restaurant": { "name": "string", "location": "string" },
+    "postId": "exact input postId string",
+    "restaurant": {
+      "name": "restaurant name",
+      "location": "usable location/address text",
+      "googleMapsLink": "map url if available, otherwise empty string"
+    },
     "meals": [
       {
-        "name": "string",
-        "price": number,
-        "description": "string",
+        "name": "meal name",
+        "price": 1250,
+        "description": "short generic description",
         "type": "FOOD" | "DRINK",
         "dietaryCategory": "YETSOM" | "YEFITSIK"
       }
@@ -624,9 +863,18 @@ OUTPUT FORMAT:
   }
 ]
 
+FINAL REMINDERS:
+- Return ONLY JSON array
+- Preserve exact postId
+- Omit bad/unclear posts
+- Prefer precision over guessing
+- If ambiguous, the restaurant name usually appears before the location
+- Use short generic food descriptions only when confident
+- Include googleMapsLink when present
+
 POSTS:
 ${JSON.stringify(posts, null, 2)}
-`.trim();
+`;
 
     let currentKeyIndex = -1;
 
@@ -977,9 +1225,9 @@ const lastProcessedMessageId =
             data: {
               name: result.restaurant.name,
               location: result.restaurant.location || "Addis Ababa",
-              geoLocation: `<iframe src="https://www.google.com/maps?q=${encodeURIComponent(
-                result.restaurant.name
-              )}&output=embed" width="600" height="450" style="border:0;"></iframe>`,
+              geoLocation: result.restaurant.googleMapsLink 
+                ? `<iframe src="https://www.google.com/maps?q=${encodeURIComponent(result.restaurant.googleMapsLink)}&output=embed" width="600" height="450" style="border:0;"></iframe>`
+                : `<iframe src="https://www.google.com/maps?q=${encodeURIComponent(result.restaurant.name)}&output=embed" width="600" height="450" style="border:0;"></iframe>`,
               logoId: logo?.id,
               logoUrl: logo?.url,
               status: "DRAFT",
