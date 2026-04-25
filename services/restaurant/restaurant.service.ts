@@ -34,7 +34,7 @@ export class RestaurantService {
         logoId = uploadedFile.id;
       }
 
-      // Handle menu image upload
+      // Handle menu image upload (primary)
       if (data.menuImage && data.menuImage instanceof File) {
         const buffer = Buffer.from(await data.menuImage.arrayBuffer());
         const uploadedFile = await fileService.uploadFile(
@@ -43,6 +43,22 @@ export class RestaurantService {
           data.menuImage.type
         );
         menuImageId = uploadedFile.id;
+      }
+
+      // Handle multiple menu images (all pages)
+      const menuImageIds: string[] = [];
+      if (data.menuImages && Array.isArray(data.menuImages)) {
+        for (const file of data.menuImages) {
+          if (file instanceof File) {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const uploadedFile = await fileService.uploadFile(
+              buffer,
+              file.name,
+              file.type
+            );
+            menuImageIds.push(uploadedFile.id);
+          }
+        }
       }
 
       // Extract coordinates from geoLocation iframe
@@ -70,12 +86,20 @@ export class RestaurantService {
           await RestaurantMenuRepository.rememberRestaurantImage({
             restaurantId: restaurant.id,
             imageId: logoId,
+            usageType: "LOGO",
           });
         }
-        if (menuImageId) {
+        
+        // Register ALL menu images (including the primary if it's in the list)
+        // Note: we use a Set to avoid double-registering if the primary was also in the multi-list
+        const allMenuIds = new Set(menuImageIds);
+        if (menuImageId) allMenuIds.add(menuImageId);
+
+        for (const id of allMenuIds) {
           await RestaurantMenuRepository.rememberRestaurantImage({
             restaurantId: restaurant.id,
-            imageId: menuImageId,
+            imageId: id,
+            usageType: "MENU",
           });
         }
       }
@@ -273,6 +297,30 @@ export class RestaurantService {
     }
   }
 
+  // Get featured (published) restaurants for home page
+  static async getFeaturedRestaurants(limit = 3): Promise<ServiceResult<Restaurant[]>> {
+    try {
+      const restaurants = await RestaurantRepository.getPaginated({
+        page: 1,
+        pageSize: limit,
+        status: "PUBLISHED",
+        sortBy: "newest"
+      });
+      
+      const items = restaurants.items;
+      items.forEach(r => {
+        const res = r as any;
+        if (res.logo) res.logoUrl = fileService.getPublicUrl(res.logo.path);
+        if (res.menuImage) res.menuImageUrl = fileService.getPublicUrl(res.menuImage.path);
+      });
+
+      return { success: true, data: items };
+    } catch (error) {
+      console.error("RestaurantService.getFeaturedRestaurants error:", error);
+      return { success: false, error: "Failed to fetch featured restaurants" };
+    }
+  }
+
   // Get all restaurants
   static async getAllRestaurants(): Promise<ServiceResult<Restaurant[]>> {
     try {
@@ -340,6 +388,7 @@ export class RestaurantService {
       
       // Hydrate Menu Items
       if (res.menuItems) {
+        res.mealCount = res.menuItems.length;
         res.menuItems.forEach((rm: any) => {
           if (rm.image) {
             rm.imageUrl = fileService.getPublicUrl(rm.image.path);

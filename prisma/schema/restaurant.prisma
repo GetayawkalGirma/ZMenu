@@ -73,6 +73,7 @@ model RestaurantImageLibrary {
   restaurantId           String
   imageId                String
   sourceRestaurantMenuId String?
+  usageType              ImageUsage @default(GENERAL)
 
   restaurant           Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   image                File            @relation(fields: [imageId], references: [id], onDelete: Cascade)
@@ -89,6 +90,15 @@ model RestaurantImageLibrary {
 // =========================
 // USER FEEDBACK / EDIT SUGGESTIONS
 // =========================
+
+enum ImageUsage {
+  LOGO
+  MENU
+  MEAL
+  GENERAL
+
+  @@schema("restaurant")
+}
 
 enum FeedbackType {
   MEAL_INFO

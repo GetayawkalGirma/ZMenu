@@ -150,3 +150,28 @@ export async function getRecentMenuUpdates(limit = 6): Promise<RecentMenuUpdateR
     timeAgo: formatTimeAgo(r.updatedAt),
   }));
 }
+export async function getPublicStats() {
+  try {
+    const [publishedRestaurants, foodListings, drinkListings, totalRestaurantMeals] = await Promise.all([
+      prisma.restaurant.count({ where: { status: "PUBLISHED" } }),
+      prisma.restaurantMenu.count({ where: { foodCategoryType: "FOOD" } }),
+      prisma.restaurantMenu.count({ where: { foodCategoryType: "DRINK" } }),
+      prisma.restaurantMenu.count(),
+    ]);
+
+    return {
+      publishedRestaurants,
+      foodListings,
+      drinkListings,
+      totalRestaurantMeals,
+    };
+  } catch (error) {
+    console.error("Error getting public stats:", error);
+    return {
+      publishedRestaurants: 0,
+      foodListings: 0,
+      drinkListings: 0,
+      totalRestaurantMeals: 0,
+    };
+  }
+}

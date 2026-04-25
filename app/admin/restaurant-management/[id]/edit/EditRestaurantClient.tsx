@@ -27,10 +27,11 @@ import {
   StatusDialog,
   StatusType,
   ConfirmDialog,
+  Badge,
 } from "@/components/ui";
 import type { RestaurantMenu, RestaurantMenuFormData } from "@/lib/types/meal";
 import { NoiseLevel, PrivacyLevel } from "@/lib/types/restaurant";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Database, ExternalLink } from "lucide-react";
 
 interface Props {
   restaurantId: string;
@@ -218,7 +219,48 @@ export function EditRestaurantClient({
             </TabsList>
 
             {/* Details Tab */}
-            <TabsContent value="details">
+            <TabsContent value="details" className="space-y-6">
+              {restaurant.sourceInfo && (restaurant.sourceInfo as any).source && (
+                <Card className="border-indigo-100 bg-indigo-50/20 overflow-hidden">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-50">
+                        <Database className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Record Provenance</span>
+                          <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest bg-white text-indigo-600 border-indigo-100 h-5">
+                            {(restaurant.sourceInfo as any).source}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900">
+                          Originating from <span className="text-indigo-600">@{(restaurant.sourceInfo as any).specificSource}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {(restaurant.sourceInfo as any).source === "TELEGRAM" && (restaurant.sourceInfo as any).metadata?.messageId && (
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="flex-1 sm:text-right">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block">Message Reference</span>
+                          <span className="text-xs font-mono text-gray-500">ID: {(restaurant.sourceInfo as any).metadata.messageId}</span>
+                        </div>
+                        <a 
+                          href={`https://t.me/${(restaurant.sourceInfo as any).specificSource}/${(restaurant.sourceInfo as any).metadata.messageId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Open Post
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader>
                   <CardTitle>Restaurant Information</CardTitle>

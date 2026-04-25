@@ -72,7 +72,7 @@ export function RestaurantImagePickerDialog({
     const query = search.trim().toLowerCase();
     if (!query) return images;
     return images.filter((image) =>
-      `${image.sourceMealName} ${image.sourceType}`
+      `${image.sourceMealName} ${image.sourceType} ${image.imageId}`
         .toLowerCase()
         .includes(query),
     );
@@ -113,7 +113,7 @@ export function RestaurantImagePickerDialog({
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter by meal name..."
+              placeholder="Search by name or ID (e.g. cm...)"
               className="pl-9"
             />
           </div>
@@ -148,17 +148,22 @@ export function RestaurantImagePickerDialog({
                     type="button"
                     key={image.imageId}
                     onClick={() => setSelectedImageId(image.imageId)}
-                    className={`rounded-lg border text-left transition overflow-hidden ${
+                    className={`rounded-lg border text-left transition overflow-hidden relative group ${
                       selected
                         ? "border-blue-600 ring-2 ring-blue-200"
                         : "border-gray-200 hover:border-blue-300"
                     }`}
                   >
-                    <img
-                      src={image.imageUrl}
-                      alt={image.sourceMealName}
-                      className="w-full aspect-square object-cover"
-                    />
+                    <div className="relative">
+                      <img
+                        src={image.imageUrl}
+                        alt={image.sourceMealName}
+                        className="w-full aspect-square object-cover"
+                      />
+                      <div className="absolute top-1 left-1 bg-black/60 backdrop-blur-md text-[8px] font-mono text-white px-1.5 py-0.5 rounded-lg border border-white/10 opacity-70 group-hover:opacity-100 transition-opacity">
+                        {image.imageId.slice(-6)}
+                      </div>
+                    </div>
                     <div className="p-2 bg-white">
                       <p className="text-xs font-medium text-gray-900 truncate">
                         {image.sourceMealName}

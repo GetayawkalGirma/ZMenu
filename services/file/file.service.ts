@@ -53,22 +53,38 @@ export class FileService {
       throw new Error(`Failed to upload file to Supabase: ${error.message}`);
     }
 
-    // 3. Create record in DB
-    const newFile = await prisma.file.create({
-      data: {
-        hash,
-        filename,
-        extension,
-        mimeType,
-        size,
-        path: data.path, // Store the bucket path
-      }
-    });
+    // 3. Create record in DB with race condition handling
+    try {
+      const newFile = await prisma.file.create({
+        data: {
+          hash,
+          filename,
+          extension,
+          mimeType,
+          size,
+          path: data.path, // Store the bucket path
+        }
+      });
 
-    return {
-      ...newFile,
-      url: this.getPublicUrl(newFile.path)
-    };
+      return {
+        ...newFile,
+        url: this.getPublicUrl(newFile.path)
+      };
+    } catch (error: any) {
+      // P2002 is the Prisma code for unique constraint violation
+      if (error.code === "P2002") {
+        const raceWinner = await prisma.file.findUnique({
+          where: { hash }
+        });
+        if (raceWinner) {
+          return {
+            ...raceWinner,
+            url: this.getPublicUrl(raceWinner.path)
+          };
+        }
+      }
+      throw error;
+    }
   }
 
   /**

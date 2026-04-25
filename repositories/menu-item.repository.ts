@@ -384,6 +384,7 @@ export class RestaurantMenuRepository {
     restaurantId: string;
     imageId: string;
     sourceRestaurantMenuId?: string;
+    usageType?: string;
   }): Promise<void> {
     await prisma.restaurantImageLibrary.upsert({
       where: {
@@ -396,10 +397,11 @@ export class RestaurantMenuRepository {
         restaurantId: params.restaurantId,
         imageId: params.imageId,
         sourceRestaurantMenuId: params.sourceRestaurantMenuId,
+        usageType: params.usageType ?? "GENERAL",
       },
       update: {
-        sourceRestaurantMenuId:
-          params.sourceRestaurantMenuId ?? undefined,
+        sourceRestaurantMenuId: params.sourceRestaurantMenuId ?? undefined,
+        usageType: params.usageType ?? undefined,
       },
     });
   }

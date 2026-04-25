@@ -75,3 +75,15 @@ export async function approveImageFeedback(feedbackId: string, mealId: string, i
     return { success: false };
   }
 }
+
+export async function getPendingFeedbackCount() {
+  try {
+    const count = await prisma.userFeedback.count({
+      where: { status: FeedbackStatus.PENDING }
+    });
+    return count;
+  } catch (error) {
+    console.error("Error getting feedback count:", error);
+    return 0;
+  }
+}

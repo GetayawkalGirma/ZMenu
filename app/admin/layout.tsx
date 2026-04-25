@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutDashboard, Utensils, Pizza, Tags, Settings, Activity, Users, Globe, MessageSquare } from "lucide-react";
+import { Menu, X, LayoutDashboard, Utensils, Pizza, Tags, Settings, Activity, Users, Globe, MessageSquare, HardDrive } from "lucide-react";
+
+import { getPendingFeedbackCount } from "./feedback/admin-actions";
 
 export default function AdminLayout({
   children,
@@ -11,6 +13,20 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [feedbackCount, setFeedbackCount] = useState(0);
+
+  // Fetch feedback count
+  useEffect(() => {
+    const fetchCount = async () => {
+      const count = await getPendingFeedbackCount();
+      setFeedbackCount(count);
+    };
+    fetchCount();
+    
+    // Refresh count every 2 minutes
+    const interval = setInterval(fetchCount, 120000);
+    return () => clearInterval(interval);
+  }, [pathname]);
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -34,6 +50,7 @@ export default function AdminLayout({
     { name: "Features", href: "/admin/features-management", icon: Settings },
     { name: "User Feedback", href: "/admin/feedback", icon: MessageSquare, color: "text-amber-600" },
     { name: "Users", href: "/admin/users", icon: Users },
+    { name: "File Manager", href: "/admin/file-manager", icon: HardDrive, color: "text-indigo-600" },
     { name: "Settings", href: "/admin/settings", icon: Settings },
     { name: "System Health", href: "/admin/health", icon: Activity, color: "text-blue-600" },
   ];
@@ -101,10 +118,18 @@ export default function AdminLayout({
                     <Link
                     key={item.href}
                     href={item.href}
-                    className={`${getActiveClass(item.href)} group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200`}
+                    className={`${getActiveClass(item.href)} group flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200`}
                     >
-                    <item.icon className={`w-5 h-5 mr-3 ${pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)) ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600"}`} />
-                    {item.name}
+                      <div className="flex items-center">
+                        <item.icon className={`w-5 h-5 mr-3 ${pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)) ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600"}`} />
+                        {item.name}
+                      </div>
+                      
+                      {item.name === "User Feedback" && feedbackCount > 0 && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-lg shadow-red-200">
+                          {feedbackCount}
+                        </span>
+                      )}
                     </Link>
                 ))}
                 </div>
@@ -141,10 +166,18 @@ export default function AdminLayout({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`${getActiveClass(item.href)} group flex items-center px-4 py-4 text-base font-bold rounded-2xl transition-all duration-200`}
+                      className={`${getActiveClass(item.href)} group flex items-center justify-between px-4 py-4 text-base font-bold rounded-2xl transition-all duration-200`}
                     >
-                      <item.icon className="w-6 h-6 mr-4" />
-                      {item.name}
+                      <div className="flex items-center">
+                        <item.icon className="w-6 h-6 mr-4" />
+                        {item.name}
+                      </div>
+
+                      {item.name === "User Feedback" && feedbackCount > 0 && (
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-black text-white shadow-lg shadow-red-200">
+                          {feedbackCount}
+                        </span>
+                      )}
                     </Link>
                   ))}
                 </div>

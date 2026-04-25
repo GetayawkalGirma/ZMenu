@@ -15,7 +15,8 @@ export const createRestaurantSchema = z.object({
   logoUrl: z.string().url().optional().or(z.literal('')),
   logo: z.any().optional(), // File object
   menuImageUrl: z.string().url().optional().or(z.literal('')),
-  menuImage: z.any().optional(), // File object
+  menuImage: z.any().optional(), // Primary File object
+  menuImages: z.array(z.any()).optional(), // Multiple File objects for library
   rating: z.number().min(0).max(5).optional(),
   status: z.enum(["DRAFT", "PUBLISHED"]).optional().default("DRAFT"),
   noiselevel: z.string().optional(),

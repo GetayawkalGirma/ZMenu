@@ -20,14 +20,15 @@ import {
   Layers,
 } from "lucide-react";
 import { RestaurantService } from "@/services/restaurant/restaurant.service";
-import { getDashboardStats } from "./admin/dashboard-data";
+import { getPublicStats } from "./admin/dashboard-data";
 
 export default async function HomePage() {
   const [result, stats] = await Promise.all([
-    RestaurantService.getAllRestaurants(),
-    getDashboardStats(),
+    // Only fetch 3 featured restaurants for the hero section
+    RestaurantService.getFeaturedRestaurants(3), 
+    getPublicStats(),
   ]);
-  const restaurants = (result.success ? result.data || [] : []).slice(0, 3);
+  const restaurants = result.success ? result.data || [] : [];
 
   return (
     <div className="flex-1 bg-white">

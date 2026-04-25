@@ -10,7 +10,7 @@ import {
 import { RestaurantFeaturesView } from "@/components/restaurant/RestaurantFeaturesView";
 import { RestaurantStatusToggle } from "@/components/restaurant/RestaurantStatusToggle";
 import Link from "next/link";
-import { Eye, EyeOff, MapPin, Star, Volume2, ShieldCheck, Clock, Crosshair, Utensils } from "lucide-react";
+import { Eye, EyeOff, MapPin, Star, Volume2, ShieldCheck, Clock, Crosshair, Utensils, Database, ExternalLink } from "lucide-react";
 import { CalculateCoordinatesButton } from "@/components/restaurant/CalculateCoordinatesButton";
 import { cn } from "@/lib/utils";
 
@@ -254,6 +254,68 @@ export default async function RestaurantViewPage({
                   <p className="text-[8px] sm:text-[9px] text-gray-400 font-medium text-center px-2 leading-relaxed italic">
                     Coordinates are extracted automatically from the iframe. Use the button above to manually re-sync.
                   </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-2xl sm:rounded-[2.5rem] border-gray-100 shadow-sm overflow-hidden bg-white">
+                <CardHeader className="bg-gray-50/50 border-b border-gray-100 px-6 sm:px-8 py-4 sm:py-6">
+                  <CardTitle className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    Source Tracking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 sm:p-8 space-y-6">
+                  {restaurant.sourceInfo && (restaurant.sourceInfo as any).source ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-gray-300">Origin</span>
+                        <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 border-indigo-100">
+                          {(restaurant.sourceInfo as any).source}
+                        </Badge>
+                      </div>
+                      
+                      {/* Telegram Details */}
+                      {(restaurant.sourceInfo as any).source === "TELEGRAM" && (
+                        <div className="space-y-4 pt-4 border-t border-gray-50">
+                          <div>
+                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1.5">Channel</span>
+                            <p className="text-sm font-bold text-gray-900">@{(restaurant.sourceInfo as any).specificSource}</p>
+                          </div>
+                          
+                          {(restaurant.sourceInfo as any).metadata?.messageId && (
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1">Message ID</span>
+                                <p className="text-xs font-mono text-gray-500">{(restaurant.sourceInfo as any).metadata.messageId}</p>
+                              </div>
+                              <a 
+                                href={`https://t.me/${(restaurant.sourceInfo as any).specificSource}/${(restaurant.sourceInfo as any).metadata.messageId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                title="View on Telegram"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            </div>
+                          )}
+
+                          {(restaurant.sourceInfo as any).metadata?.postedAt && (
+                            <div>
+                              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-1">Scraped Date</span>
+                              <p className="text-[10px] font-medium text-gray-400">
+                                {new Date((restaurant.sourceInfo as any).metadata.postedAt).toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-gray-400 italic">No source metadata available.</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

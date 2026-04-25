@@ -19,6 +19,7 @@
     "big-integer": "^1.6.52",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "input": "^1.0.1",
     "lucide-react": "^0.577.0",
     "next": "16.2.1",
