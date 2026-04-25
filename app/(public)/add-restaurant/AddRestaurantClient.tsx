@@ -310,7 +310,23 @@ export default function AddRestaurantClient() {
       fd.append("name", draft.name.trim());
       fd.append("location", draft.location.trim());
       if (draft.logoFile) fd.append("logo", draft.logoFile);
-      draft.menuImageFiles.forEach((f) => fd.append("menuImages", f));
+      
+      // We send the first menu image as the primary one for the restaurant
+      if (draft.menuImageFiles.length > 0) {
+        fd.append("menuImage", draft.menuImageFiles[0]);
+      }
+
+      // Add source information
+      const sourceData = {
+        source: "PUBLIC_USER",
+        metadata: {
+          userAgent: navigator.userAgent,
+          platform: (navigator as any).platform,
+          submittedAt: new Date().toISOString(),
+          totalImagesUploaded: draft.menuImageFiles.length
+        }
+      };
+      fd.append("sourceInfo", JSON.stringify(sourceData));
 
       const selectedMeals = draft.meals.filter((m) => m.isSelected);
       const mealsData = selectedMeals.map((m) => ({
