@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { Prisma, MenuCategory as PrismaMenuCategory } from "@prisma/client";
+import { Prisma, MenuCategory as PrismaMenuCategory, ImageUsage } from "@prisma/client";
 import type {
   MenuItem,
   RestaurantMenu,
@@ -384,7 +384,7 @@ export class RestaurantMenuRepository {
     restaurantId: string;
     imageId: string;
     sourceRestaurantMenuId?: string;
-    usageType?: string;
+    usageType?: ImageUsage;
   }): Promise<void> {
     await prisma.restaurantImageLibrary.upsert({
       where: {
@@ -397,7 +397,7 @@ export class RestaurantMenuRepository {
         restaurantId: params.restaurantId,
         imageId: params.imageId,
         sourceRestaurantMenuId: params.sourceRestaurantMenuId,
-        usageType: params.usageType ?? "GENERAL",
+        usageType: params.usageType ?? ImageUsage.GENERAL,
       },
       update: {
         sourceRestaurantMenuId: params.sourceRestaurantMenuId ?? undefined,
@@ -518,7 +518,11 @@ export class RestaurantMenuRepository {
           item.sourceRestaurantMenu?.name?.trim() ||
           item.sourceRestaurantMenu?.menuItem?.name ||
           "Saved Library Image",
-        sourceType: "library",
+        sourceType: item.usageType === "MENU" 
+          ? "menu_image" 
+          : item.usageType === "LOGO" 
+            ? "logo" 
+            : "library",
       });
     }
 

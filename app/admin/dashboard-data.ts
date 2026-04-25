@@ -60,10 +60,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     prisma.restaurantMenu.count({ where: { foodCategoryType: "DRINK" } }),
     prisma.category.count(),
     prisma.file.count({
-      where: { mimeType: { startsWith: "image/", mode: "insensitive" } },
+      where: { mimeType: { startsWith: "image/" } },
     }),
     prisma.file.aggregate({
-      where: { mimeType: { startsWith: "image/", mode: "insensitive" } },
+      where: { mimeType: { startsWith: "image/" } },
       _sum: { size: true },
     }),
     prisma.file.aggregate({ _sum: { size: true } }),

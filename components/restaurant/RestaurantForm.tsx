@@ -456,9 +456,9 @@ export function RestaurantForm({
                   Select a primary cover or manage multiple menu pages.
                 </p>
               </div>
-              {restaurantId && libraryImages.some(img => img.sourceType === "menu") && (
+              {restaurantId && libraryImages.some(img => img.sourceType === "menu_image") && (
                 <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full border border-blue-100 shadow-sm">
-                  {libraryImages.filter(img => img.sourceType === "menu").length} Pages Registered
+                  {libraryImages.filter(img => img.sourceType === "menu_image").length} Pages Registered
                 </span>
               )}
             </div>
@@ -496,7 +496,7 @@ export function RestaurantForm({
 
                 {/* 2. Alternative Pages from Library */}
                 {libraryImages
-                  .filter(img => img.sourceType === "menu" && img.imageId !== selectedMenuImageId)
+                  .filter(img => img.sourceType === "menu_image" && img.imageId !== selectedMenuImageId)
                   .map((image) => (
                     <button
                       key={image.imageId}
@@ -578,19 +578,19 @@ export function RestaurantForm({
                   </label>
                   {loadingLibrary && <Loader2 className="w-3 h-3 animate-spin text-blue-500" />}
                 </div>
-                {libraryImages.filter(img => img.sourceType === "meal").length > 0 && (
+                {libraryImages.filter(img => img.sourceType !== "menu_image" && img.sourceType !== "logo").length > 0 && (
                   <button
                     type="button"
                     onClick={() => setShowMenuImagePicker(true)}
                     className="group flex items-center gap-1.5 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-all bg-blue-50 px-3 py-1.5 rounded-full"
                   >
-                    View Library ({libraryImages.filter(img => img.sourceType === "meal").length})
+                    View Library ({libraryImages.filter(img => img.sourceType !== "menu_image" && img.sourceType !== "logo").length})
                     <ExternalLink className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 )}
               </div>
               
-              {!loadingLibrary && libraryImages.filter(img => img.sourceType === "meal").length === 0 ? (
+              {!loadingLibrary && libraryImages.filter(img => img.sourceType !== "menu_image" && img.sourceType !== "logo").length === 0 ? (
                 <div className="py-6 px-4 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 text-center">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     No library images found for this restaurant.
@@ -598,7 +598,10 @@ export function RestaurantForm({
                 </div>
               ) : (
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-                  {libraryImages.slice(0, 6).map((image) => (
+                  {libraryImages
+                    .filter(img => img.sourceType !== "menu_image" && img.sourceType !== "logo")
+                    .slice(0, 6)
+                    .map((image) => (
                     <div 
                       key={image.imageId}
                       className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 group bg-white shadow-sm hover:shadow-md transition-all"

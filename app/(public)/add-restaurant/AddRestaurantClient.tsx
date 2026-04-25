@@ -458,7 +458,7 @@ export default function AddRestaurantClient() {
     );
   }
 
-  const canSubmit = draft.name.trim() && draft.location.trim();
+  const canSubmit = Boolean(draft.name.trim() && draft.location.trim());
 
   return (
     <div className="min-h-screen bg-gray-50">
