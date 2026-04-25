@@ -53,6 +53,7 @@ export class RestaurantService {
         ...data,
         logoId,
         menuImageId,
+        sourceInfo: (data as any).sourceInfo,
         latitude: coords?.lat,
         longitude: coords?.lng,
       } as any);

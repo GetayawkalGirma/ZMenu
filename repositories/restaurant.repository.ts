@@ -19,6 +19,7 @@ export interface Restaurant {
   noiselevel: string | null;
   privacylevel: string | null;
   status: string;
+  sourceInfo: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,7 +43,8 @@ export class RestaurantRepository {
         rating: data.rating || null,
         noiselevel: data.noiselevel || null,
         privacylevel: data.privacylevel || null,
-        status: data.status || "DRAFT",
+         status: data.status || "DRAFT",
+        sourceInfo: (data as any).sourceInfo || {},
         latitude: (data as any).latitude,
         longitude: (data as any).longitude,
         features:
@@ -77,7 +79,8 @@ export class RestaurantRepository {
         rating: data.rating || null,
         noiselevel: data.noiselevel || null,
         privacylevel: data.privacylevel || null,
-        status: data.status,
+         status: data.status,
+        sourceInfo: (data as any).sourceInfo,
         latitude: (data as any).latitude,
         longitude: (data as any).longitude,
         features: data.featureIds

@@ -5,9 +5,14 @@ import {
   testRawQuery, 
   testFetchRestaurants, 
   testFetchMeals, 
-  testCloudStorage 
+  testCloudStorage,
+  testAIKeys,
+  testTelegram,
+  testSpecificAIKey,
+  checkEnvVars
 } from "./actions";
-import { Play, RotateCcw, Box, Check, X, Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { Play, RotateCcw, Box, Check, X, Loader2, Wand2, Send, Cpu, Search, Terminal } from "lucide-react";
 
 type LogEntry = {
   id: string;
@@ -26,6 +31,26 @@ export default function HealthActionsUI() {
     },
   ]);
   const [loading, setLoading] = useState(false);
+  const [aiKeyList, setAiKeyList] = useState<string[]>([]);
+
+  const handleDiscoverKeys = async () => {
+    if (loading) return;
+    setLoading(true);
+    addLog("INFO", "Scanning environment for GOOGLE_API_KEY* variables...");
+    try {
+      const data = await checkEnvVars();
+      if (data.aiKeys && data.aiKeys.length > 0) {
+        setAiKeyList(data.aiKeys);
+        addLog("SUCCESS", `Discovery complete! Found ${data.aiKeys.length} keys: ${data.aiKeys.join(", ")}`);
+      } else {
+        addLog("ERROR", "No Google API keys found in environment.");
+      }
+    } catch (err: any) {
+      addLog("ERROR", `Discovery failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addLog = (type: LogEntry["type"], message: string) => {
     const time = new Date().toLocaleTimeString();
@@ -142,6 +167,45 @@ export default function HealthActionsUI() {
           <Box className="w-4 h-4" />
           Test Cloud Storage
         </button>
+
+        <button
+          onClick={() => runTest("Google AI Keys", testAIKeys)}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 disabled:opacity-50 transition-all shadow-lg shadow-violet-200"
+        >
+          <Wand2 className="w-4 h-4" />
+          Test AI Keys
+        </button>
+
+        <button
+          onClick={() => runTest("Telegram Account", testTelegram)}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-sky-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-sky-600 disabled:opacity-50 transition-all shadow-lg shadow-sky-200"
+        >
+          <Send className="w-4 h-4" />
+          Test Telegram
+        </button>
+
+        <button
+          onClick={handleDiscoverKeys}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-lg shadow-indigo-200"
+        >
+          <Search className="w-4 h-4" />
+          Discover AI Keys
+        </button>
+
+        {aiKeyList.map((keyName) => (
+          <button
+            key={keyName}
+            onClick={() => runTest(`AI Key: ${keyName}`, () => testSpecificAIKey(keyName))}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-violet-100 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-50 disabled:opacity-50 transition-all animate-in fade-in zoom-in duration-300"
+          >
+            <Cpu className="w-4 h-4" />
+            Test {keyName.replace("GOOGLE_API_", "")}
+          </button>
+        ))}
 
         <button
           onClick={clearLogs}

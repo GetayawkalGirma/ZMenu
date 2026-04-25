@@ -4,23 +4,26 @@ import { revalidatePath } from "next/cache";
 import fs from "fs";
 import path from "path";
 
-function getEnvValue(key: string): string {
-  if (process.env[key]) return process.env[key]!;
-  const externalEnvPath = "/Users/yawkal/Documents/imposter folder/word seeder/.env";
-  try {
-    const content = fs.readFileSync(externalEnvPath, "utf-8");
-    const match = content.match(new RegExp(`${key}=([^\\s]+)`));
-    return match ? match[1] : "";
-  } catch (e) { return ""; }
-}
-
 function getAllApiKeys(): string[] {
   const keys = new Set<string>();
+  
+  // 1. Check primary and secondary keys
   if (process.env.GOOGLE_API_KEY) keys.add(process.env.GOOGLE_API_KEY);
-  if (process.env.GOOGLE_API_KEYS) process.env.GOOGLE_API_KEYS.split(",").forEach(k => keys.add(k.trim()));
   if (process.env.GOOGLE_API_KEY_2) keys.add(process.env.GOOGLE_API_KEY_2);
-  const extKey = getEnvValue("GOOGLE_API_KEY");
-  if (extKey) keys.add(extKey);
+  
+  // 2. Check for comma-separated list
+  if (process.env.GOOGLE_API_KEYS) {
+    process.env.GOOGLE_API_KEYS.split(",").forEach(k => keys.add(k.trim()));
+  }
+
+  // 3. Scan for any other GOOGLE_API_KEY_* variables dynamically
+  Object.keys(process.env).forEach(key => {
+    if (key.startsWith("GOOGLE_API_KEY_") && key !== "GOOGLE_API_KEY_2") {
+      const val = process.env[key];
+      if (val) keys.add(val.trim());
+    }
+  });
+
   return Array.from(keys).filter(Boolean);
 }
 

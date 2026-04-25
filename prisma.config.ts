@@ -4,8 +4,7 @@ import "dotenv/config";
 export default defineConfig({
   schema: "./prisma/schema",
   datasource: {
-    url: process.env.DATABASE_URL,
-    // @ts-ignore - directUrl is required by Prisma CLI but currently missing from the defineConfig types
-    directUrl: process.env.DIRECT_URL,
+    // Switching to Session Mode (Port 5432 on the pooler) which handles Prisma CLI tasks much better
+    url: (process.env.DATABASE_URL || "").replace(":6543/", ":5432/"),
   },
 } as any);

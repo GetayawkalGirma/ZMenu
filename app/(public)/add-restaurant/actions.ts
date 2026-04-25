@@ -40,6 +40,11 @@ export async function bulkSubmitRestaurant(formData: FormData) {
     const location = formData.get("location") as string;
     const logo = formData.get("logo") as File | null;
     const menuImage = formData.get("menuImage") as File | null;
+    const sourceInfoJson = formData.get("sourceInfo") as string | null;
+    let sourceInfo = {};
+    if (sourceInfoJson) {
+      try { sourceInfo = JSON.parse(sourceInfoJson); } catch {}
+    }
 
     // Validate core fields
     createRestaurantSchema.parse({
@@ -55,6 +60,7 @@ export async function bulkSubmitRestaurant(formData: FormData) {
       status: "DRAFT",
       logo: logo && logo.size > 0 ? logo : undefined,
       menuImage: menuImage && menuImage.size > 0 ? menuImage : undefined,
+      sourceInfo,
     });
 
     if (!restaurantResult.success || !restaurantResult.data) {
